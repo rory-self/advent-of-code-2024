@@ -38,14 +38,14 @@ namespace {
     }
 
     auto get_unsafe_level(const std::vector<int>& report) -> std::vector<int>::const_iterator {
-        if (report.size() <= 2) {
+        if (report.size() < 2) {
             return report.cend();
         }
 
         constexpr auto min_difference = 1;
         constexpr auto max_difference = 3;
         const auto is_increasing = is_report_increasing(report);
-        const auto are_unsafe_levels = [is_increasing, min_difference, max_difference](const auto e1, const auto e2) {
+        const auto are_unsafe_levels = [is_increasing, min_difference, max_difference](const auto& e1, const auto& e2) {
             const auto difference = std::abs(e2 - e1);
             return e1 < e2 != is_increasing or difference > max_difference or difference < min_difference;
         };
@@ -55,7 +55,7 @@ namespace {
 
     auto damp_report(
         const std::vector<int>& report,
-        const std::vector<int>::const_iterator level_to_remove
+        const std::vector<int>::const_iterator& level_to_remove
     ) -> std::vector<int> {
         std::vector<int> damped_report;
         damped_report.reserve(report.size() - 1);
