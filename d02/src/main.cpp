@@ -33,8 +33,7 @@ namespace {
             return false;
         }
 
-        const auto second_increasing_pair = std::adjacent_find(first_increasing_pair + 1, report.cend(), increasing_pair);
-        return second_increasing_pair != report.cend();
+        return std::adjacent_find(first_increasing_pair + 1, report.cend(), increasing_pair) != report.cend();
     }
 
     auto get_unsafe_level(const std::vector<int>& report) -> std::vector<int>::const_iterator {
