@@ -36,7 +36,7 @@ namespace {
         return std::adjacent_find(first_increasing_pair + 1, report.cend(), increasing_pair) != report.cend();
     }
 
-    auto get_unsafe_level(const std::vector<int>& report) -> std::vector<int>::const_iterator {
+    auto find_unsafe_level(const std::vector<int>& report) -> std::vector<int>::const_iterator {
         if (report.size() < 2) {
             return report.cend();
         }
@@ -65,18 +65,18 @@ namespace {
     }
 
     auto check_damped_report_safety(const std::vector<int>& report) -> bool {
-        const auto first_unsafe_level = get_unsafe_level(report);
+        const auto first_unsafe_level = find_unsafe_level(report);
         if (first_unsafe_level == report.cend()) {
             return true;
         }
 
         auto damped_report = damp_report(report, first_unsafe_level);
-        if (get_unsafe_level(damped_report) == damped_report.cend()) {
+        if (find_unsafe_level(damped_report) == damped_report.cend()) {
             return true;
         }
 
         damped_report = damp_report(report, first_unsafe_level + 1);
-        return get_unsafe_level(damped_report) == damped_report.cend();
+        return find_unsafe_level(damped_report) == damped_report.cend();
     }
 }
 
@@ -85,7 +85,7 @@ auto main() -> int {
     const auto reports = read_reports_from_file(file_path);
 
     const auto num_safe_reports = std::ranges::count_if(reports, [](const auto& report) {
-        return get_unsafe_level(report) == report.cend();
+        return find_unsafe_level(report) == report.cend();
     });
 
     const auto num_safe_damped_reports = std::ranges::count_if(reports, check_damped_report_safety);
