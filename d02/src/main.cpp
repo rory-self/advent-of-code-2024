@@ -77,10 +77,7 @@ namespace {
         }
 
         damped_report = damp_report(report, first_unsafe_level + 1);
-        if (get_unsafe_level(damped_report) == damped_report.cend()) {
-            return true;
-        }
-        return false;
+        return get_unsafe_level(damped_report) == damped_report.cend();
     }
 }
 
