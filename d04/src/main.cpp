@@ -5,10 +5,11 @@
 
 namespace {
     using WordPuzzle = std::vector<std::vector<char>>;
+    constexpr auto height = std::size_t{140};
+    constexpr auto width = std::size_t{140};
 
     [[nodiscard]] auto read_word_puzzle_from_file(const std::string& file_path) -> WordPuzzle {
         auto word_puzzle = WordPuzzle{};
-        constexpr auto height = std::size_t{140};
         word_puzzle.reserve(height);
 
         auto file = std::fstream {file_path};
@@ -22,10 +23,7 @@ namespace {
     [[nodiscard]] auto is_invalid_coordinate(
         const int y,
         const int x
-    ) -> bool {
-        constexpr auto height = std::size_t{140};
-        constexpr auto width = std::size_t{140};
-
+    ) noexcept -> bool {
         return y >= height or x >= width or y < 0 or x < 0;
     }
 
@@ -77,7 +75,7 @@ namespace {
         const int y_pos,
         const int x_pos
     ) -> bool {
-        if (puzzle[y_pos][x_pos] != 'A') {
+        if (constexpr auto center_char = 'A'; puzzle[y_pos][x_pos] != center_char) {
             return false;
         }
 
@@ -107,7 +105,9 @@ namespace {
             }
 
             const auto is_valid_diagonal = [puzzle](const int y1, const int x1, const int y2, const int x2) {
-                return puzzle[y1][x1] == 'M' and puzzle[y2][x2] == 'S';
+                constexpr auto start_char = 'M';
+                constexpr auto end_char = 'S';
+                return puzzle[y1][x1] == start_char and puzzle[y2][x2] == end_char;
             };
 
             return is_valid_diagonal(new_y1, new_x1, new_y2, new_x2)
