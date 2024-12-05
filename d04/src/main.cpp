@@ -94,7 +94,7 @@ namespace {
             }
         };
 
-        const auto is_invalid_pair = [puzzle, x_pos, y_pos](const CoordsPair& coords_pair) {
+        const auto is_valid_pair = [puzzle, x_pos, y_pos](const CoordsPair& coords_pair) {
             const auto [y_diff1, x_diff1] = coords_pair.first;
             const auto [y_diff2, x_diff2] = coords_pair.second;
 
@@ -104,17 +104,17 @@ namespace {
             const auto new_y2 = y_pos + y_diff2;
 
             if (!is_valid_coordinate(new_y1, new_x1) or !is_valid_coordinate(new_y2, new_x2)) {
-                return true;
+                return false;
             }
 
             const auto is_valid_diagonal = [puzzle](const int y1, const int x1, const int y2, const int x2) {
                 return puzzle[y1][x1] == 'M' and puzzle[y2][x2] == 'S';
             };
 
-            return !(is_valid_diagonal(new_y1, new_x1, new_y2, new_x2) or is_valid_diagonal(new_y2, new_x2, new_y1, new_x1));
+            return is_valid_diagonal(new_y1, new_x1, new_y2, new_x2) or is_valid_diagonal(new_y2, new_x2, new_y1, new_x1);
         };
 
-        return std::ranges::none_of(corner_pairs, is_invalid_pair);
+        return std::ranges::all_of(corner_pairs, is_valid_pair);
     }
 }
 
