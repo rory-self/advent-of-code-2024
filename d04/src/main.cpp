@@ -19,14 +19,14 @@ namespace {
         return word_puzzle;
     }
 
-    [[nodiscard]] auto is_valid_coordinate(
+    [[nodiscard]] auto is_invalid_coordinate(
         const int y,
         const int x
     ) -> bool {
         constexpr auto height = std::size_t{140};
         constexpr auto width = std::size_t{140};
 
-        return y < height and x < width and y >= 0 and x >= 0;
+        return y >= height or x >= width or y < 0 or x < 0;
     }
 
     [[nodiscard]] auto num_adjacent_words(
@@ -60,7 +60,7 @@ namespace {
                 const auto new_y  = y_pos + y_diff * i;
                 const auto new_x = x_pos + x_diff * i;
 
-                if (!is_valid_coordinate(new_y, new_x) or word_to_find[i] != puzzle[new_y][new_x]) {
+                if (is_invalid_coordinate(new_y, new_x) or word_to_find[i] != puzzle[new_y][new_x]) {
                     break;
                 }
                 ++num_letters;
@@ -103,7 +103,7 @@ namespace {
             const auto new_x2 = x_pos + x_diff2;
             const auto new_y2 = y_pos + y_diff2;
 
-            if (!is_valid_coordinate(new_y1, new_x1) or !is_valid_coordinate(new_y2, new_x2)) {
+            if (is_invalid_coordinate(new_y1, new_x1) or is_invalid_coordinate(new_y2, new_x2)) {
                 return false;
             }
 
@@ -118,7 +118,7 @@ namespace {
     }
 }
 
-int main() {
+auto main() -> int {
     const auto file_path = std::string{"input.txt"};
     const auto word_puzzle = read_word_puzzle_from_file(file_path);
 
