@@ -1,21 +1,24 @@
 #include <iostream>
-#include <vector>
 #include <fstream>
 #include <algorithm>
+#include <array>
 
 namespace {
-    using WordPuzzle = std::vector<std::vector<char>>;
     constexpr auto height = std::size_t{140};
     constexpr auto width = std::size_t{140};
+    using WordPuzzle = std::array<std::array<char, width>, height>;
 
     [[nodiscard]] auto read_word_puzzle_from_file(const std::string& file_path) -> WordPuzzle {
         auto word_puzzle = WordPuzzle{};
-        word_puzzle.reserve(height);
 
         auto file = std::fstream {file_path};
+        auto i = 0;
         for (std::string line; std::getline(file, line);) {
-            auto char_vec = std::vector(line.cbegin(), line.cend());
-            word_puzzle.push_back(char_vec);
+            auto j = 0;
+            for (const char c : line) {
+                word_puzzle[i][j++] = c;
+            }
+            ++i;
         }
         return word_puzzle;
     }
