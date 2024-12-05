@@ -73,9 +73,9 @@ namespace {
                 const auto& page_rules = rules.at(*page_it);
 
                 for (const auto& read_it : read_pages) {
-                    if (page_rules.contains(*read_it) and correction) {
+                    if (const auto has_rule = page_rules.contains(*read_it); has_rule and correction) {
                         std::iter_swap(read_it, page_it);
-                    } else if (page_rules.contains(*read_it)) {
+                    } else if (has_rule) {
                         return 0;
                     }
                 }
