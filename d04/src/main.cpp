@@ -111,7 +111,8 @@ namespace {
                 return puzzle[y1][x1] == 'M' and puzzle[y2][x2] == 'S';
             };
 
-            return is_valid_diagonal(new_y1, new_x1, new_y2, new_x2) or is_valid_diagonal(new_y2, new_x2, new_y1, new_x1);
+            return is_valid_diagonal(new_y1, new_x1, new_y2, new_x2)
+                or is_valid_diagonal(new_y2, new_x2, new_y1, new_x1);
         };
 
         return std::ranges::all_of(corner_pairs, is_valid_pair);
