@@ -20,18 +20,11 @@ namespace {
         return word_puzzle;
     }
 
-    [[nodiscard]] auto is_invalid_coordinate(
-        const int y,
-        const int x
-    ) noexcept -> bool {
+    [[nodiscard]] auto is_invalid_coordinate(const int y, const int x) noexcept -> bool {
         return y >= height or x >= width or y < 0 or x < 0;
     }
 
-    [[nodiscard]] auto num_adjacent_words(
-        const WordPuzzle& puzzle,
-        const int y_pos,
-        const int x_pos
-    ) -> unsigned int {
+    [[nodiscard]] auto num_adjacent_words(const WordPuzzle& puzzle, const int y_pos, const int x_pos) -> unsigned int {
         const auto word_to_find = std::string{"XMAS"};
         if (puzzle[y_pos][x_pos] != word_to_find[0]) {
             return 0;
@@ -70,11 +63,7 @@ namespace {
         return num_adjacent;
     }
 
-    [[nodiscard]] auto is_cross(
-        const WordPuzzle& puzzle,
-        const int y_pos,
-        const int x_pos
-    ) -> bool {
+    [[nodiscard]] auto is_cross(const WordPuzzle& puzzle, const int y_pos, const int x_pos) -> bool {
         if (constexpr auto center_char = 'A'; puzzle[y_pos][x_pos] != center_char) {
             return false;
         }
