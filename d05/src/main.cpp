@@ -64,18 +64,17 @@ namespace {
     [[nodiscard]] auto process_instruction(
         std::vector<std::string>& instruction,
         const PrintingRules& rules,
-        const bool correction
+        bool correction
     ) -> int;
 
     [[nodiscard]] auto process_corrected_instruction(
         const std::vector<std::string>::iterator& page1,
         const std::vector<std::string>::iterator& page2,
         std::vector<std::string>& instruction,
-        const PrintingRules& rules,
-        const bool correction
+        const PrintingRules& rules
     ) -> int {
         std::iter_swap(page1, page2);
-        return process_instruction(instruction, rules, correction);
+        return process_instruction(instruction, rules, true);
     }
 
     [[nodiscard]] auto process_instruction(
@@ -91,7 +90,7 @@ namespace {
 
                 for (const auto& read_it : read_pages) {
                     if (page_rules.contains(*read_it) and correction) {
-                        return process_corrected_instruction(read_it, page_it, instruction, rules, correction);
+                        return process_corrected_instruction(read_it, page_it, instruction, rules);
                     }
                     if (page_rules.contains(*read_it) and not correction) {
                         return 0;
