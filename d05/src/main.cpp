@@ -75,9 +75,7 @@ namespace {
                 for (const auto& read_it : read_pages) {
                     if (page_rules.contains(*read_it) and correction) {
                         std::iter_swap(read_it, page_it);
-                        return process_instruction(instruction, rules, true);
-                    }
-                    if (page_rules.contains(*read_it) and not correction) {
+                    } else if (page_rules.contains(*read_it)) {
                         return 0;
                     }
                 }
