@@ -62,23 +62,44 @@ namespace {
     }
 
     [[nodiscard]] auto process_instruction(
-        const std::vector<std::string>& instruction,
-        const PrintingRules& rules
+        std::vector<std::string>& instruction,
+        const PrintingRules& rules,
+        const bool correction
+    ) -> int;
+
+    [[nodiscard]] auto process_corrected_instruction(
+        const std::vector<std::string>::iterator& page1,
+        const std::vector<std::string>::iterator& page2,
+        std::vector<std::string>& instruction,
+        const PrintingRules& rules,
+        const bool correction
     ) -> int {
-        std::vector<std::string> read_pages;
+        std::iter_swap(page1, page2);
+        return process_instruction(instruction, rules, correction);
+    }
 
-        for (const auto& page : instruction) {
-            if (rules.contains(page)) {
-                const auto& page_rules = rules.at(page);
+    [[nodiscard]] auto process_instruction(
+        std::vector<std::string>& instruction,
+        const PrintingRules& rules,
+        const bool correction
+    ) -> int {
+        std::vector<std::vector<std::string>::iterator> read_pages;
 
-                for (const auto& read_page : read_pages) {
-                    if (page_rules.contains(read_page)) {
+        for (auto page_it = instruction.begin(); page_it != instruction.end(); ++page_it) {
+            if (rules.contains(*page_it)) {
+                const auto& page_rules = rules.at(*page_it);
+
+                for (const auto& read_it : read_pages) {
+                    if (page_rules.contains(*read_it) and correction) {
+                        return process_corrected_instruction(read_it, page_it, instruction, rules, correction);
+                    }
+                    if (page_rules.contains(*read_it) and not correction) {
                         return 0;
                     }
                 }
             }
 
-            read_pages.push_back(page);
+            read_pages.push_back(page_it);
         }
 
         const auto& middle_page = instruction[instruction.size() / 2];
@@ -91,10 +112,15 @@ auto main() -> int {
     auto [rules, instructions] = process_printing_file(file_path);
 
     auto middle_page_sum = 0;
-    for (const auto& instruction : instructions) {
-        middle_page_sum += process_instruction(instruction, rules);
+    auto corrected_sum = 0;
+    for (auto& instruction : instructions) {
+        middle_page_sum += process_instruction(instruction, rules, false);
+        corrected_sum += process_instruction(instruction, rules, true);
     }
 
-    std::cout << middle_page_sum << '\n';
+    const auto only_corrected_sum = corrected_sum - middle_page_sum;
+
+    std::cout << "Non-corrections:" << middle_page_sum << '\n';
+    std::cout << "Corrections:" << only_corrected_sum << '\n';
     return 0;
 }
