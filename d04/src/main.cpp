@@ -77,7 +77,6 @@ namespace {
         const int y_pos,
         const int x_pos
     ) -> bool {
-        const auto word_to_find = std::string{"MAS"};
         if (puzzle[y_pos][x_pos] != 'A') {
             return false;
         }
