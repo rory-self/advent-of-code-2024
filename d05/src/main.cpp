@@ -51,7 +51,7 @@ namespace {
         return instructions;
     }
 
-    [[nodiscard]] auto process_printing_file(
+    [[nodiscard]] auto read_printing_file(
         const std::string& file_path
     ) -> std::pair<PrintingRules, Instructions> {
         auto file = std::fstream(file_path);
@@ -59,22 +59,6 @@ namespace {
         const auto instructions = read_printing_instructions(file);
 
         return {rules, instructions};
-    }
-
-    [[nodiscard]] auto process_instruction(
-        std::vector<std::string>& instruction,
-        const PrintingRules& rules,
-        bool correction
-    ) -> int;
-
-    [[nodiscard]] auto process_corrected_instruction(
-        const std::vector<std::string>::iterator& page1,
-        const std::vector<std::string>::iterator& page2,
-        std::vector<std::string>& instruction,
-        const PrintingRules& rules
-    ) -> int {
-        std::iter_swap(page1, page2);
-        return process_instruction(instruction, rules, true);
     }
 
     [[nodiscard]] auto process_instruction(
@@ -90,7 +74,8 @@ namespace {
 
                 for (const auto& read_it : read_pages) {
                     if (page_rules.contains(*read_it) and correction) {
-                        return process_corrected_instruction(read_it, page_it, instruction, rules);
+                        std::iter_swap(read_it, page_it);
+                        return process_instruction(instruction, rules, true);
                     }
                     if (page_rules.contains(*read_it) and not correction) {
                         return 0;
@@ -108,7 +93,7 @@ namespace {
 
 auto main() -> int {
     const auto file_path = std::string{"input.txt"};
-    auto [rules, instructions] = process_printing_file(file_path);
+    auto [rules, instructions] = read_printing_file(file_path);
 
     auto middle_page_sum = 0;
     auto corrected_sum = 0;
