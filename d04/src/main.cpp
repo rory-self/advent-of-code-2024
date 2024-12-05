@@ -85,12 +85,12 @@ namespace {
         using CoordsPair = std::pair<std::pair<int, int>, std::pair<int, int>>;
         constexpr CoordsPair corner_pairs[2] = {
             {
-                {1, 1},
-            {-1, -1},
+		{1, 1},
+		{-1, -1},
             },
             {
                 {-1, 1},
-            {1, -1}
+		{1, -1}
             }
         };
 
