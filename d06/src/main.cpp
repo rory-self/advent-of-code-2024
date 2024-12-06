@@ -147,7 +147,7 @@ namespace {
         auto num_obstructions = 0;
         for (auto& y_it : layout) {
             for (auto& position_info : y_it) {
-                if (position_info == Obstacle or position_info == Visited) {
+                if (position_info != Empty) {
                     continue;
                 }
                 position_info = Obstacle;
