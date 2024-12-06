@@ -79,11 +79,15 @@ namespace {
         return {layout, guard};
     }
 
+    [[nodiscard]] auto is_out_of_bounds(const int x, const int y) noexcept -> bool {
+        return x < 0 or y < 0 or x > width or y > height;
+    }
+
     [[nodiscard]] auto count_path_length(RoomLayout layout, Guard guard) -> unsigned int {
         auto path_length = 1;
 
         auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
-        while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
+        while (not is_out_of_bounds(next_x_pos, next_y_pos)) {
             if (auto& position_info = layout[next_y_pos][next_x_pos]; position_info == Obstacle) {
                 guard.turn();
             } else {
@@ -101,16 +105,12 @@ namespace {
         return path_length;
     }
 
-    [[nodiscard]] auto is_invalid_path(const RoomLayout &layout, Guard guard) -> bool {
+    [[nodiscard]] auto is_looping_path(const RoomLayout &layout, Guard guard) -> bool {
         auto fast_guard = guard;
 
-        const auto move_guard = [](const RoomLayout& l, Guard& g) {
-            const auto out_of_bounds = [](const int x, const int y) {
-                return x < 0 or y < 0 or x > width or y > height;
-            };
-
+        const auto try_move_guard = [](const RoomLayout& l, Guard& g) {
             auto [next_x, next_y] = g.get_front_coordinate();
-            if (out_of_bounds(next_x, next_y)) {
+            if (is_out_of_bounds(next_x, next_y)) {
                 return false;
             }
 
@@ -118,7 +118,7 @@ namespace {
                 g.turn();
                 std::tie(next_x, next_y) = g.get_front_coordinate();
 
-                if (out_of_bounds(next_x, next_y)) {
+                if (is_out_of_bounds(next_x, next_y)) {
                     return false;
                 }
             }
@@ -128,15 +128,15 @@ namespace {
         };
 
         do {
-            if (not move_guard(layout, guard)) {
+            if (not try_move_guard(layout, guard)) {
                 return false;
             }
 
-            if (not move_guard(layout, fast_guard)) {
+            if (not try_move_guard(layout, fast_guard)) {
                 return false;
             }
 
-            if (not move_guard(layout, fast_guard)) {
+            if (not try_move_guard(layout, fast_guard)) {
                 return false;
             }
         } while (fast_guard != guard);
@@ -152,7 +152,7 @@ namespace {
                 }
                 position_info = Obstacle;
 
-                if (is_invalid_path(layout, guard)) {
+                if (is_looping_path(layout, guard)) {
                     ++num_obstructions;
                 }
                 position_info = Empty;
