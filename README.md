@@ -7,3 +7,5 @@ Days Completed:
 |   02     |    x     |    x     |
 |   03     |    x     |    x     |
 |   04     |    x     |    x     |
+|   05     |    x     |    x     |
+|   06     |    x     |    x     |
