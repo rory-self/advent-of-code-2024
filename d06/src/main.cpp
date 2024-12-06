@@ -84,7 +84,7 @@ namespace {
     }
 
     [[nodiscard]] auto count_path_length(RoomLayout layout, Guard guard) -> unsigned int {
-        auto path_length = 1;
+        auto path_length = 0;
 
         auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
         while (not is_out_of_bounds(next_x_pos, next_y_pos)) {
