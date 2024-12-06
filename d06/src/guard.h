@@ -4,10 +4,10 @@
 #include <utility>
 
 struct Position {
-    bool operator==(const Position& rhs) const noexcept = default;
-
     std::size_t x = 0;
     std::size_t y = 0;
+
+    bool operator==(const Position& rhs) const noexcept = default;
 };
 
 enum Direction {
