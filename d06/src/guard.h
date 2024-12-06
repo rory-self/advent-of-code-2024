@@ -4,7 +4,7 @@
 #include <utility>
 
 struct Position {
-    bool operator==(const Position& rhs) const = default;
+    bool operator==(const Position& rhs) const noexcept = default;
 
     std::size_t x = 0;
     std::size_t y = 0;
@@ -30,6 +30,8 @@ public:
     [[nodiscard]] auto get_position() const noexcept -> Position;
     auto turn() noexcept -> void;
     auto forward() noexcept -> void;
+
+    bool operator==(const Guard& rhs) const noexcept = default;
 };
 
 #endif //GUARD_H

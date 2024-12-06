@@ -9,39 +9,46 @@
 namespace {
     constexpr auto height = 130;
     constexpr auto width = 130;
-    using RoomLayout = std::array<std::array<std::pair<bool, bool>, width>, height>;
+
+    enum PositionState {
+        Empty,
+        Obstacle,
+        Visited,
+    };
+    using RoomLayout = std::array<std::array<PositionState, width>, height>;
+
 
     auto interpret_position(
         const char obstacle,
         const Position& current_position,
-        std::pair<bool, bool>& position_data,
+        PositionState& position_data,
         Position& guard_position,
         Direction& guard_direction
     ) {
         switch (obstacle) {
             case '#':
-                position_data = {true, false};
+                position_data = Obstacle;
                 break;
             case '.':
-                position_data = {false, false};
+                position_data = Empty;
                 break;
             case '^':
-                position_data = {false, true};
+                position_data = Visited;
                 guard_direction = Up;
                 guard_position = current_position;
                 break;
             case 'v':
-                position_data = {false, true};
+                position_data = Visited;
                 guard_direction = Down;
                 guard_position = current_position;
                 break;
             case '>':
-                position_data = {false, true};
+                position_data = Visited;
                 guard_direction = Right;
                 guard_position = current_position;
                 break;
             case '<':
-                position_data = {false, true};
+                position_data = Visited;
                 guard_direction = Left;
                 guard_position = current_position;
                 break;
@@ -77,15 +84,15 @@ namespace {
 
         auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
         while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
-            if (auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos]; is_obstacle) {
+            if (auto& position_info = layout[next_y_pos][next_x_pos]; position_info == Obstacle) {
                 guard.turn();
             } else {
-                if (not visited) {
+                if (position_info != Visited) {
                     ++path_length;
                 }
 
                 guard.forward();
-                visited = true;
+                position_info = Visited;
             }
 
             std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
@@ -102,20 +109,18 @@ namespace {
                 return x < 0 or y < 0 or x > width or y > height;
             };
 
-            const auto [next_x, next_y] = g.get_front_coordinate();
+            auto [next_x, next_y] = g.get_front_coordinate();
             if (out_of_bounds(next_x, next_y)) {
                 return false;
             }
 
-            auto is_obstacle =  l[next_y][next_x].first;
-            while (is_obstacle) {
+            while (l[next_y][next_x] == Obstacle) {
                 g.turn();
-                const auto [next_x, next_y] = g.get_front_coordinate();
+                std::tie(next_x, next_y) = g.get_front_coordinate();
 
                 if (out_of_bounds(next_x, next_y)) {
                     return false;
                 }
-                is_obstacle =  l[next_y][next_x].first;
             }
 
             g.forward();
@@ -134,23 +139,23 @@ namespace {
             if (not move_guard(layout, fast_guard)) {
                 return false;
             }
-        } while (fast_guard.get_position() != guard.get_position());
+        } while (fast_guard != guard);
         return true;
     }
 
     [[nodiscard]] auto count_blocking_obstructions(RoomLayout& layout, const Guard& guard) -> unsigned int {
         auto num_obstructions = 0;
         for (auto& y_it : layout) {
-            for (auto& is_obstacle : y_it | std::views::keys) {
-                if (is_obstacle) {
+            for (auto& position_info : y_it) {
+                if (position_info == Obstacle or position_info == Visited) {
                     continue;
                 }
-                is_obstacle = true;
+                position_info = Obstacle;
 
                 if (is_invalid_path(layout, guard)) {
                     ++num_obstructions;
                 }
-                is_obstacle = false;
+                position_info = Empty;
             }
         }
 
