@@ -3,7 +3,7 @@
 auto Guard::turn() noexcept -> void {
     switch (direction) {
         case Up:
-            direction = Right;;
+            direction = Right;
             break;
         case Down:
             direction = Left;

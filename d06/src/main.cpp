@@ -80,7 +80,7 @@ namespace {
             if (auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos]; is_obstacle) {
                 guard.turn();
             } else {
-                if (visited == false) {
+                if (not visited) {
                     ++path_length;
                 }
 
@@ -94,31 +94,33 @@ namespace {
         return path_length;
     }
 
-    [[nodiscard]] auto is_invalid_path(RoomLayout& layout, Guard& guard) -> bool {
+    [[nodiscard]] auto is_invalid_path(RoomLayout layout, Guard guard) -> bool {
+        auto last_square_visited = false;
+
         auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
         while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
-            auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos];
-            while (is_obstacle) {
+            if (auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos]; is_obstacle) {
                 guard.turn();
-                std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
-                std::tie(is_obstacle, visited) = layout[next_y_pos][next_x_pos];
+            } else {
+                if (not visited) {
+                    last_square_visited = true;
+                } else if (last_square_visited) {
+                    return true;
+                } else {
+                    last_square_visited = false;
+                }
+
+                guard.forward();
+                visited = true;
             }
 
-            const auto first_square_visited = layout[next_y_pos][next_x_pos].second;
-
-            guard.forward();
-            visited = true;
             std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
-
-            if (layout[next_y_pos][next_x_pos].second and first_square_visited) {
-                return true;
-            }
         }
 
         return false;
     }
 
-    [[nodiscard]] auto count_blocking_obstructions(RoomLayout& layout, Guard& guard) -> unsigned int {
+    [[nodiscard]] auto count_blocking_obstructions(RoomLayout& layout, const Guard& guard) -> unsigned int {
         auto num_obstructions = 0;
         for (auto& y_it : layout) {
             for (auto& is_obstacle : y_it | std::views::keys) {
