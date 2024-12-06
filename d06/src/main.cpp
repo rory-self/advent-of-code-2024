@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <utility>
+#include <ranges>
 
 #include "guard.h"
 
@@ -13,34 +14,34 @@ namespace {
     auto interpret_position(
         const char obstacle,
         const Position& current_position,
-        std::pair<bool, bool>& layout_position,
+        std::pair<bool, bool>& position_data,
         Position& guard_position,
         Direction& guard_direction
     ) {
         switch (obstacle) {
             case '#':
-                layout_position = {true, false};
+                position_data = {true, false};
                 break;
             case '.':
-                layout_position = {false, false};
+                position_data = {false, false};
                 break;
             case '^':
-                layout_position = {false, true};
+                position_data = {false, true};
                 guard_direction = Up;
                 guard_position = current_position;
                 break;
             case 'v':
-                layout_position = {false, true};
+                position_data = {false, true};
                 guard_direction = Down;
                 guard_position = current_position;
                 break;
             case '>':
-                layout_position = {false, true};
+                position_data = {false, true};
                 guard_direction = Right;
                 guard_position = current_position;
                 break;
             case '<':
-                layout_position = {false, true};
+                position_data = {false, true};
                 guard_direction = Left;
                 guard_position = current_position;
                 break;
@@ -70,30 +71,81 @@ namespace {
         const auto guard = Guard(guard_direction, guard_position);
         return {layout, guard};
     }
+
+    [[nodiscard]] auto count_path_length(RoomLayout layout, Guard guard) -> unsigned int {
+        auto path_length = 1;
+
+        auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
+        while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
+            if (auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos]; is_obstacle) {
+                guard.turn();
+            } else {
+                if (visited == false) {
+                    ++path_length;
+                }
+
+                guard.forward();
+                visited = true;
+            }
+
+            std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
+        }
+
+        return path_length;
+    }
+
+    [[nodiscard]] auto is_invalid_path(RoomLayout& layout, Guard& guard) -> bool {
+        auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
+        while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
+            auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos];
+            while (is_obstacle) {
+                guard.turn();
+                std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
+                std::tie(is_obstacle, visited) = layout[next_y_pos][next_x_pos];
+            }
+
+            const auto first_square_visited = layout[next_y_pos][next_x_pos].second;
+
+            guard.forward();
+            visited = true;
+            std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
+
+            if (layout[next_y_pos][next_x_pos].second and first_square_visited) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    [[nodiscard]] auto count_blocking_obstructions(RoomLayout& layout, Guard& guard) -> unsigned int {
+        auto num_obstructions = 0;
+        for (auto& y_it : layout) {
+            for (auto& is_obstacle : y_it | std::views::keys) {
+                if (is_obstacle) {
+                    continue;
+                }
+                is_obstacle = true;
+
+                if (is_invalid_path(layout, guard)) {
+                    ++num_obstructions;
+                }
+                is_obstacle = false;
+            }
+        }
+
+        return num_obstructions;
+    }
 }
 
 auto main() -> int {
     const auto file_path = "input.txt";
     auto [layout, guard] = read_layout_from_file(file_path);
 
-    auto num_visited = 1;
-
-    auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
-    while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
-        if (auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos]; is_obstacle) {
-            guard.turn();
-        } else {
-            if (visited == false) {
-                ++num_visited;
-            }
-
-            guard.forward();
-            visited = true;
-        }
-
-        std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
-    }
+    const auto num_visited = count_path_length(layout, guard);
+    const auto num_obstructions = count_blocking_obstructions(layout, guard);
 
     std::cout << num_visited << '\n';
+    std::cout << num_obstructions << '\n';
     return 0;
 }
