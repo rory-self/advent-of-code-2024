@@ -25,18 +25,22 @@ namespace {
                 layout_position = {false, false};
                 break;
             case '^':
+                layout_position = {false, true};
                 guard_direction = Up;
                 guard_position = current_position;
                 break;
             case 'v':
+                layout_position = {false, true};
                 guard_direction = Down;
                 guard_position = current_position;
                 break;
             case '>':
+                layout_position = {false, true};
                 guard_direction = Right;
                 guard_position = current_position;
                 break;
             case '<':
+                layout_position = {false, true};
                 guard_direction = Left;
                 guard_position = current_position;
                 break;
@@ -70,6 +74,26 @@ namespace {
 
 auto main() -> int {
     const auto file_path = "input.txt";
-    const auto [layout, guard] = read_layout_from_file(file_path);
+    auto [layout, guard] = read_layout_from_file(file_path);
+
+    auto num_visited = 0;
+
+    auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
+    while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
+        if (auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos]; is_obstacle) {
+            guard.turn();
+        } else {
+            if (visited == false) {
+                ++num_visited;
+            }
+
+            guard.forward();
+            visited = true;
+        }
+
+        std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
+    }
+
+    std::cout << num_visited << '\n';
     return 0;
 }

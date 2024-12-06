@@ -26,8 +26,8 @@ public:
 
     [[nodiscard]] auto get_front_coordinate() const -> std::pair<int, int>;
 
-    auto turn() noexcept;
-    auto forward();
+    auto turn() noexcept -> void;
+    auto forward() noexcept -> void;
 };
 
 #endif //GUARD_H
