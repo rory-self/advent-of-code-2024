@@ -94,30 +94,48 @@ namespace {
         return path_length;
     }
 
-    [[nodiscard]] auto is_invalid_path(RoomLayout layout, Guard guard) -> bool {
-        auto last_square_visited = false;
+    [[nodiscard]] auto is_invalid_path(const RoomLayout &layout, Guard guard) -> bool {
+        auto fast_guard = guard;
 
-        auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
-        while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
-            if (auto& [is_obstacle, visited] = layout[next_y_pos][next_x_pos]; is_obstacle) {
-                guard.turn();
-            } else {
-                if (not visited) {
-                    last_square_visited = true;
-                } else if (last_square_visited) {
-                    return true;
-                } else {
-                    last_square_visited = false;
-                }
+        const auto move_guard = [](const RoomLayout& l, Guard& g) {
+            const auto out_of_bounds = [](const int x, const int y) {
+                return x < 0 or y < 0 or x > width or y > height;
+            };
 
-                guard.forward();
-                visited = true;
+            const auto [next_x, next_y] = g.get_front_coordinate();
+            if (out_of_bounds(next_x, next_y)) {
+                return false;
             }
 
-            std::tie(next_x_pos, next_y_pos) = guard.get_front_coordinate();
-        }
+            auto is_obstacle =  l[next_y][next_x].first;
+            while (is_obstacle) {
+                g.turn();
+                const auto [next_x, next_y] = g.get_front_coordinate();
 
-        return false;
+                if (out_of_bounds(next_x, next_y)) {
+                    return false;
+                }
+                is_obstacle =  l[next_y][next_x].first;
+            }
+
+            g.forward();
+            return true;
+        };
+
+        do {
+            if (not move_guard(layout, guard)) {
+                return false;
+            }
+
+            if (not move_guard(layout, fast_guard)) {
+                return false;
+            }
+
+            if (not move_guard(layout, fast_guard)) {
+                return false;
+            }
+        } while (fast_guard.get_position() != guard.get_position());
+        return true;
     }
 
     [[nodiscard]] auto count_blocking_obstructions(RoomLayout& layout, const Guard& guard) -> unsigned int {
