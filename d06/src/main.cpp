@@ -76,7 +76,7 @@ auto main() -> int {
     const auto file_path = "input.txt";
     auto [layout, guard] = read_layout_from_file(file_path);
 
-    auto num_visited = 0;
+    auto num_visited = 1;
 
     auto [next_x_pos, next_y_pos] = guard.get_front_coordinate();
     while (next_x_pos >= 0 and next_y_pos >= 0 and next_x_pos < width and next_y_pos < height) {
