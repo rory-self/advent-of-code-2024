@@ -39,11 +39,6 @@ auto Guard::turn() noexcept -> void {
     return {signed_x_pos, signed_y_pos};
 }
 
-auto Guard::get_position() const noexcept -> Position {
-    return position;
-}
-
-
 auto Guard::forward() noexcept -> void {
     switch (direction) {
         case Up:

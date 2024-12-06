@@ -27,7 +27,6 @@ public:
         , position{position} {}
 
     [[nodiscard]] auto get_front_coordinate() const -> std::pair<int, int>;
-    [[nodiscard]] auto get_position() const noexcept -> Position;
     auto turn() noexcept -> void;
     auto forward() noexcept -> void;
 
