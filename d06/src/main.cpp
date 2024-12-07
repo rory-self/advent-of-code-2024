@@ -17,7 +17,6 @@ namespace {
     };
     using RoomLayout = std::array<std::array<PositionState, width>, height>;
 
-
     auto interpret_position(
         const char obstacle,
         const Position& current_position,
@@ -57,9 +56,7 @@ namespace {
         }
     }
 
-    [[nodiscard]] auto read_layout_from_file(
-        const std::string& file_path
-    ) -> std::pair<RoomLayout, Guard> {
+    [[nodiscard]] auto read_layout_from_file(const std::string& file_path) -> std::pair<RoomLayout, Guard> {
         RoomLayout layout;
         Position guard_position;
         Direction guard_direction;
@@ -170,7 +167,7 @@ auto main() -> int {
     const auto num_visited = count_path_length(layout, guard);
     const auto num_obstructions = count_blocking_obstructions(layout, guard);
 
-    std::cout << num_visited << '\n';
-    std::cout << num_obstructions << '\n';
+    std::cout << "Cells visited:" << num_visited << '\n';
+    std::cout << "Blocking obstacle placements:" << num_obstructions << '\n';
     return 0;
 }
