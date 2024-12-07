@@ -18,13 +18,13 @@ namespace {
     using RoomLayout = std::array<std::array<PositionState, width>, height>;
 
     auto interpret_position(
-        const char obstacle,
+        const char position_char,
         const Position& current_position,
         PositionState& position_data,
         Position& guard_position,
         Direction& guard_direction
     ) {
-        switch (obstacle) {
+        switch (position_char) {
             case '#':
                 position_data = Obstacle;
                 break;
