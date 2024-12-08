@@ -19,6 +19,10 @@ namespace {
             std::vector<unsigned long> terms;
             constexpr auto term_delimiter = ' ';
             for (std::string term; std::getline(line_stream, term, term_delimiter);) {
+                if (term.empty()) {
+                    continue;
+                }
+
                 const auto numeric_term = std::stoul(term);
                 terms.push_back(numeric_term);
             }
