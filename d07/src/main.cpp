@@ -2,9 +2,11 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <functional>
 
 namespace {
     using Equation = std::pair<unsigned long, std::vector<unsigned long>>;
+    using Operation = std::function<unsigned long(const unsigned long&, const unsigned long&)>;
 
     [[nodiscard]] auto read_equations_from_file(const std::string& file_path) -> std::vector<Equation> {
         std::vector<Equation> equations;
@@ -33,14 +35,27 @@ namespace {
 
         return equations;
     }
+
+    [[nodiscard]] auto is_valid_equation(const Equation& equation, const std::array<Operation, 2>& ops) -> bool {
+        return true;
+    }
 }
 
 auto main() -> int {
     const auto file_path = std::string{"input.txt"};
     const auto equations = read_equations_from_file(file_path);
 
-    unsigned long test_value_sum = 0;
+    const std::array<Operation, 2> operations = {
+        [](const unsigned long& t1, const unsigned long& t2) { return t1 + t2; },
+        [](const unsigned long& t1, const unsigned long& t2) { return t1 * t2; },
+    };
 
+    unsigned long test_value_sum = 0;
+    for (const auto& equation : equations) {
+        if (is_valid_equation(equation, operations)) {
+            test_value_sum += equation.first;
+        }
+    }
     std::cout << test_value_sum << std::endl;
     return 0;
 }
