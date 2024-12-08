@@ -5,7 +5,10 @@
 #include <functional>
 
 namespace {
-    using Equation = std::pair<unsigned long, std::vector<unsigned long>>;
+    struct Equation {
+        const unsigned long result;
+        const std::vector<unsigned long> terms;
+    };
     using Operation = std::function<unsigned long(const unsigned long&, const unsigned long&)>;
 
     [[nodiscard]] auto read_equations_from_file(const std::string& file_path) -> std::vector<Equation> {
@@ -53,7 +56,7 @@ auto main() -> int {
     unsigned long test_value_sum = 0;
     for (const auto& equation : equations) {
         if (is_valid_equation(equation, operations)) {
-            test_value_sum += equation.first;
+            test_value_sum += equation.result;
         }
     }
     std::cout << test_value_sum << std::endl;
