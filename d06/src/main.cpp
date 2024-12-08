@@ -167,7 +167,7 @@ auto main() -> int {
     const auto num_visited = count_path_length(layout, guard);
     const auto num_obstructions = count_blocking_obstructions(layout, guard);
 
-    std::cout << "Cells visited:" << num_visited << '\n';
-    std::cout << "Blocking obstacle placements:" << num_obstructions << '\n';
+    std::cout << "Cells visited: " << num_visited << '\n';
+    std::cout << "Blocking obstacle placements: " << num_obstructions << '\n';
     return 0;
 }
