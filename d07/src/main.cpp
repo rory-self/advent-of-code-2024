@@ -11,7 +11,7 @@ namespace {
         const std::vector<unsigned long> terms;
     };
     using Operation = std::function<unsigned long(const unsigned long&, const unsigned long&)>;
-    constexpr auto num_operations = 2;
+    constexpr auto num_operations = 3;
 
     [[nodiscard]] auto read_equations_from_file(const std::string& file_path) -> std::vector<Equation> {
         std::vector<Equation> equations;
@@ -73,6 +73,12 @@ auto main() -> int {
     const std::array<Operation, num_operations> operations = {
         [](const unsigned long& t1, const unsigned long& t2) { return t1 + t2; },
         [](const unsigned long& t1, const unsigned long& t2) { return t1 * t2; },
+        [](const unsigned long& t1, const unsigned long& t2) {
+            std::stringstream new_num;
+            new_num << t1 << t2;
+
+            return std::stoul(new_num.str());
+        },
     };
 
     unsigned long test_value_sum = 0;
