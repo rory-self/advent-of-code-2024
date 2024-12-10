@@ -36,16 +36,14 @@ namespace {
 
     auto compact_disk(std::vector<Block>& blocks) {
         const auto is_free_space = [](const Block& block){ return block.is_empty; };
-        auto first_empty_it = std::ranges::find_if(blocks, is_free_space);
         for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
             if (it->is_empty) {
                 continue;
             }
+            const auto forward_it = it.base();
+            const auto first_empty_it = std::find_if(blocks.begin(), forward_it, is_free_space);
 
-            if (first_empty_it != blocks.end()) {
-                std::swap(*it, *first_empty_it);
-                first_empty_it = std::find_if(first_empty_it + 1, blocks.end(), is_free_space);
-            }
+            std::swap(*it, *first_empty_it);
         }
     }
 
@@ -54,7 +52,7 @@ namespace {
         for (std::size_t i = 0; i < blocks.size(); ++i) {
             const auto [is_empty, id] = blocks[i];
             if (is_empty) {
-                break;
+                continue;
             }
 
             checksum += id * i;
