@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <functional>
+#include <algorithm>
 
 namespace {
     struct Equation {
@@ -10,6 +11,7 @@ namespace {
         const std::vector<unsigned long> terms;
     };
     using Operation = std::function<unsigned long(const unsigned long&, const unsigned long&)>;
+    constexpr auto num_operations = 2;
 
     [[nodiscard]] auto read_equations_from_file(const std::string& file_path) -> std::vector<Equation> {
         std::vector<Equation> equations;
@@ -39,8 +41,28 @@ namespace {
         return equations;
     }
 
-    [[nodiscard]] auto is_valid_equation(const Equation& equation, const std::array<Operation, 2>& ops) -> bool {
-        return true;
+    [[nodiscard]] auto is_valid_equation(
+        const Equation& equation,
+        const std::array<Operation, num_operations>& operations
+    ) -> bool {
+        const auto& terms = equation.terms;
+        const auto result = equation.result;
+
+        if (terms.empty()) {
+            return false;
+        }
+
+        const std::function<bool(std::size_t, const unsigned long&)> evaluate = [&](const std::size_t i, const unsigned long& curr_result) {
+            if (i == terms.size() - 1) {
+                return curr_result == result;
+            }
+
+            return std::ranges::any_of(operations, [&](const Operation& op) {
+                return evaluate(i + 1, op(curr_result, terms[i + 1]));
+            });
+        };
+
+        return evaluate(0, terms[0]);
     }
 }
 
@@ -48,7 +70,7 @@ auto main() -> int {
     const auto file_path = std::string{"input.txt"};
     const auto equations = read_equations_from_file(file_path);
 
-    const std::array<Operation, 2> operations = {
+    const std::array<Operation, num_operations> operations = {
         [](const unsigned long& t1, const unsigned long& t2) { return t1 + t2; },
         [](const unsigned long& t1, const unsigned long& t2) { return t1 * t2; },
     };
