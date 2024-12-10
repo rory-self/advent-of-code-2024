@@ -51,6 +51,11 @@ namespace {
             coordinates_queue.pop();
 
             const auto curr_height = topo_map[curr_y][curr_x];
+            if (constexpr auto max_height = 9; curr_height == max_height) {
+                trailhead_score += 1;
+                continue;
+            }
+
             for (const auto& [x_diff, y_diff] : directions) {
                 const auto x = static_cast<int>(curr_x) + x_diff;
                 const auto y = static_cast<int>(curr_y) + y_diff;
@@ -59,10 +64,7 @@ namespace {
                     continue;
                 }
 
-                const auto adjacent_height = topo_map[y][x];
-                if (constexpr auto max_height = 9; adjacent_height == max_height) {
-                    trailhead_score += 1;
-                } else if (curr_height + 1 == adjacent_height) {
+                if (curr_height + 1 == topo_map[y][x]) {
                     coordinates_queue.push(Coordinates{
                         static_cast<std::size_t>(x),
                         static_cast<std::size_t>(y)
