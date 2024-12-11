@@ -110,7 +110,7 @@ auto main() -> int {
         }
         return false;
     };
-    const auto rating_calculation = [](uint& curr_rating, const uint& height, const Coordinates&, CoordinatesSet&) {
+    const auto rating_calculation = [](uint& curr_rating, const uint height, const Coordinates&, CoordinatesSet&) {
         if (height == max_height) {
             curr_rating += 1;
             return true;
