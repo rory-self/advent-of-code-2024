@@ -40,7 +40,7 @@ namespace {
             if (it->is_empty) {
                 continue;
             }
-            const auto forward_it = it.base();
+            const auto forward_it = std::next(it).base();
             const auto first_empty_it = std::find_if(blocks.begin(), forward_it, is_free_space);
 
             std::swap(*it, *first_empty_it);

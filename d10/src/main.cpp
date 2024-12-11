@@ -15,9 +15,11 @@ namespace {
         std::size_t y;
     };
 
-    [[nodiscard]] auto read_map_from_file(const std::string& file_path) -> std::pair<TopographicMap, std::vector<Coordinates>> {
+    [[nodiscard]] auto read_map_from_file(
+        const std::string& file_path
+    ) -> std::pair<TopographicMap, std::vector<Coordinates>> {
         auto file = std::ifstream(file_path);
-        TopographicMap topo_map;
+        TopographicMap topographic_map;
         std::vector<Coordinates> trailhead_coords;
 
         std::size_t row = 0;
@@ -29,20 +31,23 @@ namespace {
                     trailhead_coords.emplace_back(Coordinates{col, row});
                 }
 
-                topo_map[row][col] = height;
+                topographic_map[row][col] = height;
                 ++col;
             }
             ++row;
         }
-        return {topo_map, trailhead_coords};
+        return {topographic_map, trailhead_coords};
     }
 
-    [[nodiscard]] auto calculate_trailhead_score(const TopographicMap& topo_map, const Coordinates& coordinates) -> int {
+    [[nodiscard]] auto calculate_trailhead_score(
+        const TopographicMap& topographic_map,
+        const Coordinates& coordinates
+    ) -> uint {
         constexpr std::pair<int, int> directions[4] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
         auto coordinates_queue = std::queue<Coordinates>{{coordinates}};
 
         const auto within_bounds = [](const int x, const int y) {
-            return x >= 0 && y >= 0 && x < map_width && y < map_height;
+            return x >= 0 and y >= 0 and x < map_width and y < map_height;
         };
 
         auto trailhead_score = 0;
@@ -50,7 +55,7 @@ namespace {
             const auto [curr_x, curr_y] = coordinates_queue.front();
             coordinates_queue.pop();
 
-            const auto curr_height = topo_map[curr_y][curr_x];
+            const auto curr_height = topographic_map[curr_y][curr_x];
             if (constexpr auto max_height = 9; curr_height == max_height) {
                 trailhead_score += 1;
                 continue;
@@ -64,7 +69,7 @@ namespace {
                     continue;
                 }
 
-                if (curr_height + 1 == topo_map[y][x]) {
+                if (curr_height + 1 == topographic_map[y][x]) {
                     coordinates_queue.push(Coordinates{
                         static_cast<std::size_t>(x),
                         static_cast<std::size_t>(y)
@@ -79,11 +84,11 @@ namespace {
 
 auto main() -> int {
     const auto file_path = std::string{"input.txt"};
-    const auto [topo_map, trailhead_coords] = read_map_from_file(file_path);
+    const auto [topographic_map, trailhead_coords] = read_map_from_file(file_path);
 
-    auto score_sum = 0;
+    uint score_sum = 0;
     for (const auto& coords : trailhead_coords) {
-        score_sum += calculate_trailhead_score(topo_map, coords);
+        score_sum += calculate_trailhead_score(topographic_map, coords);
     }
 
     std::cout << score_sum << '\n';
