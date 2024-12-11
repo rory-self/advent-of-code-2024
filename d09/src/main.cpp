@@ -2,8 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-#include <ranges>
-#include <sstream>
 
 namespace {
     struct Block {
@@ -58,6 +56,10 @@ namespace {
             }
 
             const auto required_length = it->length;
+            if (required_length == 0) {
+                continue;
+            }
+
             const auto forward_it = std::next(it).base();
 
             const auto is_valid_space = [required_length](const Block& block) {
@@ -77,8 +79,8 @@ namespace {
                 ++empty_it;
             }
 
-            const auto new_free_space = free_space - required_length;
-            for (auto i = 0; i < free_space - required_length; ++i) {
+            const std::size_t new_free_space = free_space - required_length;
+            for (auto i = 0; i < new_free_space; ++i) {
                 empty_it->length = new_free_space;
                 ++empty_it;
             }
