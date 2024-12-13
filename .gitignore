@@ -2,4 +2,5 @@
 **/.idea/
 **.o
 **/main
-**.txt
+input.txt
+test.txt
