@@ -1,5 +1,3 @@
-https://adventofcode.com/2024
-
 Days Completed:
 |   Day    |  Part 1  |  Part 2  |   Day    |  Part 1  |  Part 2  |
 | -------- | -------- | -------- | -------- | -------- | -------- |
