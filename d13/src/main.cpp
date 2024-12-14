@@ -51,9 +51,9 @@ namespace {
         ++it;
         const auto match2_str = it->str();
 
-        const auto float1 = std::stof(match1_str);
-        const auto float2 = std::stof(match2_str);
-        return {float1, float2};
+        const auto arg1 = std::stof(match1_str);
+        const auto arg2 = std::stof(match2_str);
+        return {arg1, arg2};
     }
 
     [[nodiscard]] auto read_crane_games_from_file(
