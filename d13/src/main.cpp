@@ -50,8 +50,8 @@ namespace {
         ++it;
         const auto match2_str = it->str();
 
-        const auto arg1 = std::stof(match1_str);
-        const auto arg2 = std::stof(match2_str);
+        const auto arg1 = std::stol(match1_str);
+        const auto arg2 = std::stol(match2_str);
         return {arg1, arg2};
     }
 
