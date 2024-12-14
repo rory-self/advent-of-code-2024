@@ -5,7 +5,7 @@ constexpr auto room_height = 103;
 
 auto Coordinates::operator+=(const Coordinates &other) noexcept -> Coordinates& {
     const auto wrap_around = [](const int coordinate_sum, const int limit) -> int {
-        if (coordinate_sum > limit) {
+        if (coordinate_sum >= limit) {
             return coordinate_sum - limit;
         }
         if (coordinate_sum < 0) {
@@ -24,9 +24,9 @@ auto Coordinates::operator+=(const Coordinates &other) noexcept -> Coordinates& 
 
 auto Coordinates::get_quadrant() const noexcept -> Quadrant {
     const auto is_top = y < room_height / 2;
-    const auto is_left = x < room_width / 2;
-    const auto is_right = x > room_width / 2 + 1;
-    const auto is_bottom = y > room_height / 2 + 1;
+    const auto is_left = x < room_width / 2 ;
+    const auto is_right = x > room_width / 2;
+    const auto is_bottom = y > room_height / 2;
 
     if (is_top && is_left) {
         return TopLeft;
