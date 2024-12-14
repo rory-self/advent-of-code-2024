@@ -4,7 +4,6 @@
 #include <cmath>
 #include <fstream>
 #include <regex>
-#include <set>
 
 namespace {
     using Matrix2x2 = std::array<std::array<long, 2>, 2>;
