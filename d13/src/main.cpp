@@ -64,7 +64,6 @@ namespace {
         const auto numeric_pattern = std::regex{"[0-9]+"};
 
         auto file = std::ifstream(file_path);
-        std::string buffer;
         do {
             const auto [button_a_x, button_a_y] = extract_positional_args_from_file_line(file, numeric_pattern);
             const auto [button_b_x, button_b_y] = extract_positional_args_from_file_line(file, numeric_pattern);
@@ -80,6 +79,7 @@ namespace {
             const auto prize_pos = std::array<long, 2>{{prize_x, prize_y}};
             all_game_specs.push_back({button_specs, prize_pos});
 
+            std::string buffer;
             std::getline(file, buffer);
         } while (not file.eof());
 
