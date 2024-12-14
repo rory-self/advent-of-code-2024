@@ -72,8 +72,14 @@ namespace {
         const Coordinates& coords,
         const Direction& base_direction
     ) -> bool {
-        const auto is_existing_adjacency = [adjacent_plots, coords, base_direction](const auto& direction) -> bool {
+        const auto is_existing_adjacency = [adjacent_plots, coords, base_direction](const Direction& direction) -> bool {
             const auto [x_diff, y_diff] = direction;
+            const auto [base_x_diff, base_y_diff] = base_direction;
+
+            // Check direction is perpendicular to the base direction
+            if ((base_x_diff != 0 and x_diff != 0) or (y_diff != 0 and base_y_diff != 0)) {
+                return false;
+            }
 
             const auto new_x = coords.x + x_diff;
             const auto new_y = coords.y + y_diff;
@@ -110,6 +116,14 @@ namespace {
             return x >= 0 and y >= 0 and x < plot_width and y < plot_height;
         };
 
+        const auto process_perimeter = [&new_region, &adjacent_plots](const Coordinates& coords, const Direction& direction) {
+            new_region.perimeter++;
+
+            if (is_new_side(adjacent_plots, coords, direction)) {
+                new_region.sides++;
+            }
+        };
+
         while (not plot_queue.empty()) {
             new_region.area++;
 
@@ -128,20 +142,12 @@ namespace {
                 const auto new_coords = Coordinates{new_x, new_y};
 
                 if (not in_bounds(new_x, new_y)) {
-                    new_region.perimeter++;
-
-                    if (is_new_side(adjacent_plots, new_coords, direction)) {
-                        new_region.sides++;
-                    }
+                    process_perimeter(new_coords, direction);
                     continue;
                 }
                 auto& [adjacent_plant_type, visited] = plot_map[new_y][new_x];
                 if (adjacent_plant_type != plant_type) {
-                    new_region.perimeter++;
-
-                    if (is_new_side(adjacent_plots, new_coords, direction)) {
-                        new_region.sides++;
-                    }
+                    process_perimeter(new_coords, direction);
                     continue;
                 }
                 if (visited) {
