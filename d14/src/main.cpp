@@ -64,17 +64,12 @@ namespace {
     }
 
     [[nodiscard]] auto is_christmas_tree(const std::vector<Robot>& robots) -> bool {
-        const auto robots_to_coords = [&robots]() {
-            std::unordered_set<Coordinates, CoordinatesHash> robot_coords;
-            for (const auto& robot : robots) {
-                const auto robot_pos = robot.get_position();
-                robot_coords.insert(robot_pos);
-            }
+        std::unordered_set<Coordinates, CoordinatesHash> robot_coords;
+        for (const auto& robot : robots) {
+            const auto robot_position = robot.get_position();
+            robot_coords.insert(robot_position);
+        }
 
-            return robot_coords;
-        };
-
-        const auto robot_coords = robots_to_coords();
         return std::ranges::any_of(robot_coords, [robot_coords](const auto& pos) {
             return is_valid_top(robot_coords, pos);
         });
