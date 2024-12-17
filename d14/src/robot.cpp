@@ -42,3 +42,7 @@ auto Robot::move() noexcept -> void {
 auto Robot::get_quadrant() const noexcept -> Quadrant {
     return position.get_quadrant();
 }
+
+auto Robot::get_position() const noexcept -> Coordinates {
+    return position;
+}

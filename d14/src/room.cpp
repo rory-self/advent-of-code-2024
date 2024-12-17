@@ -4,6 +4,11 @@ constexpr auto room_width = 101;
 constexpr auto room_height = 103;
 
 auto Coordinates::operator+=(const Coordinates &other) noexcept -> Coordinates& {
+    *this = *this + other;
+    return *this;
+}
+
+auto Coordinates::operator+(const Coordinates& rhs) const -> Coordinates {
     const auto wrap_around = [](const int coordinate_sum, const int limit) -> int {
         if (coordinate_sum >= limit) {
             return coordinate_sum - limit;
@@ -14,12 +19,12 @@ auto Coordinates::operator+=(const Coordinates &other) noexcept -> Coordinates& 
         return coordinate_sum;
     };
 
-    const auto new_x = x + other.x;
-    x = wrap_around(new_x, room_width);
+    const auto new_x = x + rhs.x;
+    const auto wrapped_x = wrap_around(new_x, room_width);
 
-    const auto new_y = y + other.y;
-    y = wrap_around(new_y, room_height);
-    return *this;
+    const auto new_y = y + rhs.y;
+    const auto wrapped_y = wrap_around(new_y, room_height);
+    return {wrapped_x, wrapped_y};
 }
 
 auto Coordinates::get_quadrant() const noexcept -> Quadrant {
@@ -41,5 +46,12 @@ auto Coordinates::get_quadrant() const noexcept -> Quadrant {
         return BottomRight;
     }
     return NoQuadrant;
+}
+
+auto CoordinatesHash::operator()(const Coordinates &coords) const -> std::size_t {
+    const auto x_hash = static_cast<size_t>(coords.x);
+    const auto y_hash = static_cast<size_t>(coords.y);
+
+    return x_hash ^ y_hash << 1;
 }
 

@@ -7,7 +7,7 @@
 
 class Robot {
     Coordinates position;
-    Coordinates velocity;
+    const Coordinates velocity;
 
     Robot(const Coordinates& position, const Coordinates& velocity);
 public:
@@ -15,6 +15,7 @@ public:
 
     auto move() noexcept -> void;
     [[nodiscard]] auto get_quadrant() const noexcept -> Quadrant;
+    [[nodiscard]] auto get_position() const noexcept -> Coordinates;
 };
 
 #endif //ROBOT_H
