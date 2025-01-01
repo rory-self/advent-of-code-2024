@@ -3,7 +3,7 @@
 #include <array>
 #include <vector>
 #include <tuple>
-#include <stack>
+#include <unordered_set>
 
 namespace {
     enum Direction {
@@ -12,6 +12,7 @@ namespace {
         Left,
         Right
     };
+
     using Directions = std::vector<Direction>;
 
     struct Coordinates {
@@ -42,6 +43,15 @@ namespace {
         [[nodiscard]] auto operator==(const Coordinates &other) const noexcept -> bool = default;
     };
 
+    struct CoordinatesHash {
+        auto operator()(const Coordinates &coordinates) const noexcept -> std::size_t {
+            const auto x_hash = std::hash<std::size_t>()(coordinates.x);
+            const auto y_hash = std::hash<std::size_t>()(coordinates.y);
+
+            return x_hash ^ y_hash << 1;
+        }
+    };
+
     enum Entity {
         Wall,
         Box,
@@ -50,8 +60,8 @@ namespace {
         BoxRight,
     };
 
-    constexpr auto warehouse_width = 50;
-    constexpr auto warehouse_height = 50;
+    constexpr auto warehouse_width = 10;
+    constexpr auto warehouse_height = 10;
     template<size_t N>
     using Warehouse = std::array<std::array<Entity, N>, warehouse_height>;
 
@@ -60,6 +70,15 @@ namespace {
         const Coordinates new_pos;
         const Entity object_type;
     };
+
+    struct MovementHash {
+        auto operator()(const EntityMovement &movement) const -> std::size_t {
+            const auto old_pos_hash = CoordinatesHash()(movement.old_pos);
+            const auto new_pos_hash = CoordinatesHash()(movement.new_pos);
+            return old_pos_hash ^ new_pos_hash << 1;
+        }
+    };
+    using Movements = std::unordered_set<EntityMovement, MovementHash>;
 
     [[nodiscard]] auto warehouse_object_from_char(const char c) -> Entity {
         switch (c) {
@@ -140,7 +159,7 @@ namespace {
         const Entity object,
         const Coordinates &object_location,
         const Direction &direction,
-        std::stack<EntityMovement> &movements
+        Movements &movements
     ) -> bool {
         switch (object) {
             case BoxLeft:
@@ -150,7 +169,7 @@ namespace {
             case Box: {
                 const auto new_object_pos = object_location + direction;
                 const auto object_at_pos = warehouse[new_object_pos.y][new_object_pos.x];
-                movements.emplace(EntityMovement{object_location, new_object_pos, Box});
+                movements.insert(EntityMovement{object_location, new_object_pos, Box});
 
                 return can_move(warehouse, object_at_pos, new_object_pos, direction, movements);
             }
@@ -169,7 +188,7 @@ namespace {
         const Entity box_side,
         const Coordinates &side_location,
         const Direction &direction,
-        std::stack<EntityMovement> &movements
+        Movements &movements
     ) -> bool {
         const auto left_location = box_side == BoxLeft ? side_location : side_location + Left;
         const auto right_location = box_side == BoxRight ? side_location : side_location + Right;
@@ -180,22 +199,23 @@ namespace {
         const auto object_at_pos_right = warehouse[new_object_pos_right.y][new_object_pos_right.x];
 
         if (direction == Left) {
-            movements.emplace(EntityMovement{right_location, new_object_pos_right, BoxRight});
-            movements.emplace(EntityMovement{left_location, new_object_pos_left, BoxLeft});
+            movements.insert(EntityMovement{right_location, new_object_pos_right, BoxRight});
+            movements.insert(EntityMovement{left_location, new_object_pos_left, BoxLeft});
             return can_move(warehouse, object_at_pos_left, new_object_pos_left, Left, movements);
         }
         if (direction == Right) {
-            movements.emplace(EntityMovement{left_location, new_object_pos_left, BoxLeft});
-            movements.emplace(EntityMovement{right_location, new_object_pos_right, BoxRight});
+            movements.insert(EntityMovement{left_location, new_object_pos_left, BoxLeft});
+            movements.insert(EntityMovement{right_location, new_object_pos_right, BoxRight});
             return can_move(warehouse, object_at_pos_right, new_object_pos_right, Right, movements);
         }
 
-        if (not movements.empty()) {
-            const auto last_movement_pos = movements.top().old_pos;
-            if (last_movement_pos != right_location and last_movement_pos != left_location) {
-                movements.emplace(EntityMovement{left_location, new_object_pos_left, BoxLeft});
-                movements.emplace(EntityMovement{right_location, new_object_pos_right, BoxRight});
-            }
+        const auto left_movement = EntityMovement{left_location, new_object_pos_left, BoxLeft};
+        const auto right_movement = EntityMovement{right_location, new_object_pos_right, BoxRight};
+        if (not movements.contains(left_movement)) {
+            movements.insert(left_movement);
+        }
+        if (not movements.contains(right_movement)) {
+            movements.insert(right_movement);
         }
 
         return can_move(warehouse, object_at_pos_left, new_object_pos_left, direction, movements)
@@ -203,17 +223,15 @@ namespace {
     }
 
     template<size_t N>
-    auto execute_entity_movements(Warehouse<N> &warehouse, std::stack<EntityMovement> &movements) {
-        while (not movements.empty()) {
-            const auto [old_pos, new_pos, entity_type] = movements.top();
-            movements.pop();
+    auto execute_entity_movements(Warehouse<N> &warehouse, Movements &movements) {
+        for (const auto& movement : movements) {
+            const auto [x, y] = movement.new_pos;
+            warehouse[y][x] = movement.object_type;
+        }
 
-            if (warehouse[new_pos.y][new_pos.x] != Empty) {
-                throw std::runtime_error("Cannot move object into non-empty space");
-            }
-
-            warehouse[new_pos.y][new_pos.x] = entity_type;
-            warehouse[old_pos.y][old_pos.x] = Empty;
+        for (const auto& movement : movements) {
+            const auto [x, y] = movement.old_pos;
+            warehouse[y][x] = Empty;
         }
     }
 
@@ -224,7 +242,7 @@ namespace {
         const Directions &directions
     ) -> Warehouse<N> {
         for (const auto &direction: directions) {
-            std::stack<EntityMovement> movements;
+            Movements movements;
             const auto new_robot_pos = robot_location + direction;
             const auto object_at_pos = warehouse[new_robot_pos.y][new_robot_pos.x];
             if (can_move(warehouse, object_at_pos, new_robot_pos, direction, movements)) {
@@ -260,8 +278,9 @@ namespace {
             for (std::size_t x = 0; x < warehouse_width; ++x) {
                 const auto object = warehouse[y][x];
 
-                wide_warehouse[y][x * 2] = object == Box ? BoxLeft : object;
-                wide_warehouse[y][x * 2 + 1] = object == Box ? BoxRight : object;
+                const auto left_x_pos = x * 2;
+                wide_warehouse[y][left_x_pos] = object == Box ? BoxLeft : object;
+                wide_warehouse[y][left_x_pos + 1] = object == Box ? BoxRight : object;
             }
         }
 
@@ -275,7 +294,7 @@ namespace {
 }
 
 auto main() -> int {
-    const auto file_path = std::string{"input.txt"};
+    const auto file_path = std::string{"test.txt"};
     const auto [warehouse, robot_start, directions] = read_setup_from_file(file_path);
 
     const auto moved_warehouse = process_robot_movements(warehouse, robot_start, directions);
