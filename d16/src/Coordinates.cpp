@@ -4,16 +4,16 @@ auto Coordinates::operator+(const Direction direction) const noexcept -> Coordin
     auto new_coords = *this;
 
     switch (direction) {
-        Up:
+        case North:
             new_coords.y -= 1;
             break;
-        Down:
+        case South:
             new_coords.y += 1;
             break;
-        Left:
+        case West:
             new_coords.x -= 1;
             break;
-        Right:
+        case East:
             new_coords.x += 1;
             break;
     }

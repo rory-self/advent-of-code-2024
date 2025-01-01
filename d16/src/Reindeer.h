@@ -6,7 +6,7 @@
 #include <array>
 
 class Reindeer {
-    Direction direction = Right;
+    Direction direction = East;
     Coordinates coordinates{};
 
 public:

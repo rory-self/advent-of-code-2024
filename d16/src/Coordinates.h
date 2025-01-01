@@ -4,10 +4,10 @@
 #include <cstddef>
 
 enum Direction {
-    Up,
-    Down,
-    Left,
-    Right
+    North,
+    South,
+    West,
+    East
 };
 
 struct Coordinates {
@@ -15,9 +15,12 @@ struct Coordinates {
     std::size_t y;
 
     Coordinates() = default;
-    Coordinates(const std::size_t x, const std::size_t y): x(x), y(y) {}
 
-    auto operator=(const Coordinates& other) noexcept -> Coordinates& = default;
+    Coordinates(const std::size_t x, const std::size_t y): x(x), y(y) {
+    }
+
+    auto operator=(const Coordinates &other) noexcept -> Coordinates & = default;
+
     [nodiscard] auto operator+(Direction direction) const noexcept -> Coordinates;
 };
 

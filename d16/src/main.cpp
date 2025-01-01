@@ -37,7 +37,7 @@ namespace {
         }
     }
 
-    [[nodiscard]] auto read_maze_from_file(const std::string& filename) -> std::pair<Maze, Reindeer> {
+    [[nodiscard]] auto read_maze_from_file(const std::string &filename) -> std::pair<Maze, Reindeer> {
         Maze maze;
         auto file = std::ifstream{filename};
 
@@ -45,7 +45,7 @@ namespace {
         std::size_t y = 0;
         for (std::string line; std::getline(file, line);) {
             std::size_t x = 0;
-            for (const auto& c : line) {
+            for (const auto &c: line) {
                 if (constexpr auto start_char = 'S'; c == start_char) {
                     const auto start_position = Coordinates{x, y};
                     reindeer.update_coordinates(start_position);
@@ -61,14 +61,13 @@ namespace {
         return {maze, reindeer};
     }
 
-    [[nodiscard]] auto calculate_least_points(const Maze& maze, const Reindeer& reindeer) -> unsigned int {
+    [[nodiscard]] auto calculate_least_points(const Maze &maze, const Reindeer &reindeer) -> unsigned int {
         unsigned int points = 0;
 
         std::queue<Coordinates> coord_queue;
         const auto start_pos = reindeer.get_coordinates();
         coord_queue.push(start_pos);
 
-        auto curr_direction = Direction::Right;
         while (not coord_queue.empty()) {
             const auto [curr_x, curr_y] = coord_queue.front();
             coord_queue.pop();
