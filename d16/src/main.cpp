@@ -1,4 +1,5 @@
 #include "Coordinates.h"
+#include "Reindeer.h"
 
 #include <iostream>
 #include <array>
@@ -15,6 +16,7 @@ namespace {
     struct Tile {
         Entity entity;
         unsigned int min_score;
+        bool visited;
     };
 
     constexpr std::size_t maze_height = 142;
@@ -35,33 +37,35 @@ namespace {
         }
     }
 
-    [[nodiscard]] auto read_maze_from_file(const std::string& filename) -> std::pair<Maze, Coordinates> {
+    [[nodiscard]] auto read_maze_from_file(const std::string& filename) -> std::pair<Maze, Reindeer> {
         Maze maze;
         auto file = std::ifstream{filename};
 
-        auto start_position = Coordinates();
+        auto reindeer = Reindeer{};
         std::size_t y = 0;
         for (std::string line; std::getline(file, line);) {
             std::size_t x = 0;
             for (const auto& c : line) {
                 if (constexpr auto start_char = 'S'; c == start_char) {
-                    start_position = Coordinates{x, y};
+                    const auto start_position = Coordinates{x, y};
+                    reindeer.update_coordinates(start_position);
                 }
 
                 const auto entity = char_to_entity(c);
-                maze[y][x] = {entity, 0};
+                maze[y][x] = {entity, 0, false};
                 ++x;
             }
             ++y;
         }
 
-        return {maze, start_position};
+        return {maze, reindeer};
     }
 
-    [[nodiscard]] auto calculate_least_points(const Maze& maze, const Coordinates& start_pos) -> unsigned int {
+    [[nodiscard]] auto calculate_least_points(const Maze& maze, const Reindeer& reindeer) -> unsigned int {
         unsigned int points = 0;
 
         std::queue<Coordinates> coord_queue;
+        const auto start_pos = reindeer.get_coordinates();
         coord_queue.push(start_pos);
 
         auto curr_direction = Direction::Right;
@@ -76,9 +80,9 @@ namespace {
 
 auto main() -> int {
     const auto filename = std::string{"input.txt"};
-    const auto [maze, start_pos] = read_maze_from_file(filename);
+    const auto [maze, reindeer] = read_maze_from_file(filename);
 
-    const auto num_points = calculate_least_points(maze, start_pos);
+    const auto num_points = calculate_least_points(maze, reindeer);
     std::cout << num_points << '\n';
     return 0;
 }
