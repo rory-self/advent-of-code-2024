@@ -2,6 +2,7 @@
 #define COORDINATES_H
 
 #include <cstddef>
+#include <array>
 
 enum Direction {
     North,
@@ -20,8 +21,9 @@ struct Coordinates {
     }
 
     auto operator=(const Coordinates &other) noexcept -> Coordinates & = default;
-
-    [nodiscard] auto operator+(Direction direction) const noexcept -> Coordinates;
+    auto operator+(Direction direction) const noexcept -> Coordinates;
 };
+
+[[nodiscard]] auto get_relative_directions(Direction direction) -> std::array<Direction, 3>;
 
 #endif //COORDINATES_H
