@@ -20,8 +20,10 @@ struct Coordinates {
     Coordinates(const std::size_t x, const std::size_t y): x(x), y(y) {
     }
 
+    [[nodiscard]] auto operator==(const Coordinates& other) const noexcept -> bool = default;
     auto operator=(const Coordinates &other) noexcept -> Coordinates & = default;
     auto operator+(Direction direction) const noexcept -> Coordinates;
+    auto operator-(Direction direction) const noexcept -> Coordinates;
 };
 
 [[nodiscard]] auto get_relative_directions(Direction direction) -> std::array<Direction, 3>;
