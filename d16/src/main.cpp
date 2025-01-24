@@ -4,6 +4,7 @@
 #include <array>
 #include <fstream>
 #include <queue>
+#include <cassert>
 
 namespace {
     enum Entity {
@@ -19,8 +20,8 @@ namespace {
         std::array<bool, 4> direction_visited_from;
     };
 
-    constexpr std::size_t maze_height = 15;
-    constexpr std::size_t maze_width = 15;
+    constexpr std::size_t maze_height = 141;
+    constexpr std::size_t maze_width = 141;
     using Maze = std::array<std::array<Tile, maze_width>, maze_height>;
 
     [[nodiscard]] auto char_to_entity(const char c) -> Entity {
@@ -53,7 +54,7 @@ namespace {
                 if (constexpr auto start_char = 'S'; c == start_char) {
                     starting_coords = Coordinates{x, y};
                     maze[y][x].visited = true;
-                    maze[y][x].direction_visited_from = {true, true, true, true};
+                    maze[y][x].direction_visited_from = {false, false, false, false};
                 } else if (constexpr auto end_char = 'E'; c == end_char) {
                     end_coords = Coordinates{x, y};
                 }
@@ -111,7 +112,7 @@ namespace {
         return least_points;
     }
 
-    [[nodiscard]] auto calculate_tile_num_on_path(const Maze &maze, const Coordinates &end_pos,
+    [[nodiscard]] auto calculate_tile_num_on_paths(const Maze &maze, const Coordinates &end_pos,
                                                   const Coordinates &start_pos) -> unsigned int {
         unsigned int num_tiles = 0;
 
@@ -125,7 +126,7 @@ namespace {
             coord_queue.pop();
 
             if (curr_coords == start_pos) {
-                continue;
+                return num_tiles;
             }
 
             const auto preceding_directions = maze[curr_coords.y][curr_coords.x].direction_visited_from;
@@ -139,18 +140,18 @@ namespace {
             }
         }
 
-        return num_tiles;
+        assert(false);
     }
 }
 
 auto main() -> int {
-    const auto filename = std::string{"test.txt"};
+    const auto filename = std::string{"input.txt"};
     auto [maze, start_pos, end_pos] = read_maze_from_file(filename);
 
     const auto num_points = calculate_least_points(maze, start_pos);
     std::cout << "Least points: " << num_points << '\n';
 
-    const auto num_tiles = calculate_tile_num_on_path(maze, end_pos, start_pos);
+    const auto num_tiles = calculate_tile_num_on_paths(maze, end_pos, start_pos);
     std::cout << "Tiles on best path(s): " << num_tiles << '\n';
     return 0;
 }
