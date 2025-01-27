@@ -11,14 +11,12 @@ namespace {
         Safe,
         Corrupted
     };
+    using MemorySpace = std::array<std::array<SpaceStatus, max_height>, max_width>;
 
-    struct Space {
-        SpaceStatus status = Safe;
+    struct SpaceRecord {
         bool is_pathed = false;
         unsigned int path_length = 0;
     };
-
-    using MemorySpace = std::array<std::array<Space, max_height>, max_width>;
 
     [[nodiscard]] auto read_falling_bytes_from_file(const std::string &file_path) -> std::queue<Coordinates> {
         std::queue<Coordinates> falling_bytes;
@@ -40,23 +38,26 @@ namespace {
         const auto [x_pos, y_pos] = falling_bytes.front();
         falling_bytes.pop();
 
-        memory_space[x_pos][y_pos].status = Corrupted;
+        memory_space[x_pos][y_pos] = Corrupted;
     }
 
-    [[nodiscard]] auto calculate_min_path(MemorySpace &memory_space) -> unsigned int {
+    [[maybe_unused]] auto calculate_min_path(MemorySpace &memory_space) -> unsigned int {
+        auto path_records = std::array<std::array<SpaceRecord, max_height>, max_width>{};
+        path_records[0][0].is_pathed = true;
+
         auto coordinate_queue = std::queue<Coordinates>{};
 
         const auto queue_adjacent_spaces = [&](const Coordinates &coordinate) {
             for (const auto adjacent_coord: coordinate.adjacent_coordinates()) {
                 const auto [adjacent_x, adjacent_y] = adjacent_coord;
-                auto &[status, is_pathed, path_length] = memory_space[adjacent_x][adjacent_y];
+                auto &[is_pathed, path_length] = path_records[adjacent_x][adjacent_y];
 
-                if (is_pathed or status == Corrupted) {
+                if (is_pathed or memory_space[adjacent_x][adjacent_y] == Corrupted) {
                     continue;
                 }
 
                 is_pathed = true;
-                path_length = memory_space[coordinate.x][coordinate.y].path_length + 1;
+                path_length = path_records[coordinate.x][coordinate.y].path_length + 1;
 
                 coordinate_queue.push(adjacent_coord);
 
@@ -76,7 +77,7 @@ namespace {
             queue_adjacent_spaces(curr_coordinate);
         }
 
-        const auto min_path = memory_space[max_width - 1][max_height - 1].path_length;
+        const auto min_path = path_records[max_width - 1][max_height - 1].path_length;
         if (min_path == 0) {
             throw std::runtime_error("No path found to exit");
         }
@@ -86,18 +87,30 @@ namespace {
 
 auto main() -> int {
     auto memory_space = MemorySpace{};
-    memory_space[0][0].is_pathed = true;
 
     const auto file_path = std::string{"input.txt"};
     auto falling_bytes = read_falling_bytes_from_file(file_path);
 
     constexpr auto bytes_to_simulate = 1024;
-    for (auto i = 0; i < bytes_to_simulate; ++i) {
+    unsigned int bytes_simulated;
+    for (bytes_simulated = 0; bytes_simulated < bytes_to_simulate; ++bytes_simulated) {
         simulate_falling_byte(falling_bytes, memory_space);
     }
 
     const auto min_path_value = calculate_min_path(memory_space);
-    std::cout << min_path_value << '\n';
+    std::cout << "Minimum path length: " << min_path_value << '\n';
+
+    for (;; ++bytes_simulated) {
+        const auto [last_byte_x, last_byte_y] = falling_bytes.front();
+        simulate_falling_byte(falling_bytes, memory_space);
+
+        try {
+            calculate_min_path(memory_space);
+        } catch (const std::runtime_error &) {
+            std::cout << "Blocking Byte Coordinate: " << last_byte_x << "," << last_byte_y << '\n';
+            break;
+        }
+    }
 
     return 0;
 }
