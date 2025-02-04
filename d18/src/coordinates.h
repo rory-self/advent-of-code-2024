@@ -23,10 +23,16 @@ struct Coordinates {
 
     [[nodiscard]] auto adjacent_coordinates() const noexcept -> std::vector<Coordinates>;
 
+    [[nodiscard]] auto operator==(const Coordinates& other) const noexcept -> bool;
+
 private:
     [[nodiscard]] auto available_directions() const noexcept -> std::unordered_set<Direction>;
 
     [[nodiscard]] auto operator+(Direction direction) const noexcept -> Coordinates;
+};
+
+struct CoordinatesHash {
+    [[nodiscard]] auto operator()(const Coordinates& coords) const noexcept -> std::size_t;
 };
 
 
