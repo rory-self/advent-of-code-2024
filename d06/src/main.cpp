@@ -59,7 +59,7 @@ namespace {
     [[nodiscard]] auto read_layout_from_file(const std::string& file_path) -> std::pair<RoomLayout, Guard> {
         RoomLayout layout;
         Position guard_position;
-        Direction guard_direction;
+        Direction guard_direction = Up;
 
         auto file = std::ifstream(file_path);
         std::size_t y = 0;
