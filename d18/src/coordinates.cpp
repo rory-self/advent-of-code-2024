@@ -24,6 +24,10 @@ auto Coordinates::available_directions() const noexcept -> std::unordered_set<Di
     return directions;
 }
 
+auto Coordinates::operator==(const Coordinates &other) const noexcept -> bool {
+    return x == other.x and y == other.y;
+}
+
 auto Coordinates::operator+(const Direction direction) const noexcept -> Coordinates {
     auto new_coordinates = *this;
 
@@ -41,7 +45,7 @@ auto Coordinates::operator+(const Direction direction) const noexcept -> Coordin
             new_coordinates.x += 1;
             break;
         default:
-            assert("unhandled direction argument");
+            assert(false and "unhandled direction argument");
     }
 
     return new_coordinates;
@@ -49,7 +53,6 @@ auto Coordinates::operator+(const Direction direction) const noexcept -> Coordin
 
 auto Coordinates::adjacent_coordinates() const noexcept -> std::vector<Coordinates> {
     std::vector<Coordinates> coordinates;
-    coordinates.reserve(4);
 
     for (const auto available_directions = this->available_directions(); const auto direction: available_directions) {
         const auto adjacent_coordinate = *this + direction;
@@ -57,4 +60,8 @@ auto Coordinates::adjacent_coordinates() const noexcept -> std::vector<Coordinat
     }
 
     return coordinates;
+}
+
+auto CoordinatesHash::operator()(const Coordinates& coords) const noexcept -> std::size_t {
+    return coords.x ^ coords.y << 1;
 }
