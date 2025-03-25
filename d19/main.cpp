@@ -8,9 +8,7 @@
 namespace {
     using Patterns = std::vector<std::string>;
 
-    [[nodiscard]] auto towel_details_from_file(
-        const std::string &file_path
-    ) -> std::pair<Patterns, Patterns> {
+    [[nodiscard]] auto towel_details_from_file(const std::string &file_path) -> std::pair<Patterns, Patterns> {
         auto file = std::ifstream(file_path);
 
         // Collect available patterns
@@ -33,7 +31,7 @@ namespace {
         std::ranges::sort(available_patterns, [](const auto &p1, const auto &p2) { return p1.size() > p2.size(); });
 
         // Collect target designs
-        std::vector<std::string> wanted_designs;
+        Patterns wanted_designs;
         for (std::string design; std::getline(file, design);) {
             if (design.empty()) {
                 continue;
@@ -46,16 +44,24 @@ namespace {
 
     [[nodiscard]] auto is_possible_design(
         const std::string &target_design,
-        const std::vector<std::string>::const_iterator &patterns_start,
-        const std::vector<std::string>::const_iterator &patterns_end,
+        const Patterns::const_iterator &patterns_start,
+        const Patterns::const_iterator &patterns_end,
         std::unordered_map<std::string, bool> &design_cache
     ) -> bool {
+        // Cache explored design possibilities for speedup
+        if (design_cache.contains(target_design)) {
+            return design_cache[target_design];
+        }
+
         const auto first_eligible_pattern = std::find_if(patterns_start, patterns_end, [target_design](const auto &p) {
             return p.size() <= target_design.size();
         });
 
-        const auto is_best_pattern = [&target_design, first_eligible_pattern, patterns_end, &design_cache
-                ](const auto &pattern) {
+        const auto is_possible_sub_design = [&first_eligible_pattern, &patterns_end, &design_cache](const auto &d) {
+            return is_possible_design(d, first_eligible_pattern, patterns_end, design_cache);
+        };
+
+        const auto pattern_satisfies_design = [&target_design, &is_possible_sub_design](const auto &pattern) {
             const auto substr_start = target_design.find(pattern);
             if (substr_start == std::string::npos) {
                 return false;
@@ -70,25 +76,19 @@ namespace {
 
             if (is_start) {
                 const auto right_substr = target_design.substr(substr_end);
-                return is_possible_design(right_substr, first_eligible_pattern, patterns_end, design_cache);
+                return is_possible_sub_design(right_substr);
             }
             if (is_end) {
                 const auto left_substr = target_design.substr(0, substr_start);
-                return is_possible_design(left_substr, first_eligible_pattern, patterns_end, design_cache);
+                return is_possible_sub_design(left_substr);
             }
 
             const auto left_substr = target_design.substr(0, substr_start);
             const auto right_substr = target_design.substr(substr_end);
-            return is_possible_design(left_substr, first_eligible_pattern, patterns_end, design_cache)
-                   and is_possible_design(right_substr, first_eligible_pattern, patterns_end, design_cache);
+            return is_possible_sub_design(left_substr) and is_possible_sub_design(right_substr);
         };
 
-        // Cache explored design possibilities for speedup
-        if (design_cache.contains(target_design)) {
-            return design_cache[target_design];
-        }
-
-        const auto is_possible = std::any_of(first_eligible_pattern, patterns_end, is_best_pattern);
+        const auto is_possible = std::any_of(first_eligible_pattern, patterns_end, pattern_satisfies_design);
         design_cache[target_design] = is_possible;
         return is_possible;
     }
