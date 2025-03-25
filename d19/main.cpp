@@ -53,7 +53,7 @@ namespace {
             return design_cache[target_design];
         }
 
-        const auto first_eligible_pattern = std::find_if(patterns_start, patterns_end, [target_design](const auto &p) {
+        const auto first_eligible_pattern = std::find_if(patterns_start, patterns_end, [&target_design](const auto &p) {
             return p.size() <= target_design.size();
         });
 
