@@ -21,11 +21,7 @@ namespace {
 
     struct CoordinatesHasher {
         [[nodiscard]] auto operator()(const Coordinates& coords) const -> std::size_t {
-            const auto h1 = std::hash<std::size_t>()(coords.x);
-            const auto h2 = std::hash<std::size_t>()(coords.y);
-
-            // Combine field hash values
-            return h1 ^ h2 << 1;
+            return coords.x ^ coords.y << 1;
         }
     };
 
