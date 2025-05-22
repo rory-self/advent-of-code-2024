@@ -26,8 +26,8 @@ using Stones = std::vector<ulong>;
 // Prototypes //
 [[nodiscard]] auto read_stones_from_file(const std::string &file_path)
     -> Stones;
-auto n_blinks_on_stone_collection(const Stones &stones, const uint n,
-                                  StoneBlinkMap &blink_map) -> void;
+void n_blinks_on_stone_collection(const Stones &stones, const uint n,
+                                  StoneBlinkMap &blink_map);
 [[nodiscard]] auto get_num_stones(const ulong &stone,
                                   const uint remaining_blinks,
                                   StoneBlinkMap &blink_map) -> ulong;
