@@ -1,203 +1,199 @@
-#include <iostream>
 #include <array>
-#include <vector>
 #include <fstream>
+#include <iostream>
 #include <queue>
+#include <string>
 #include <unordered_set>
-#include <unordered_map>
-#include <algorithm>
+#include <vector>
 
 namespace {
-    constexpr std::size_t plot_width = 140;
-    constexpr std::size_t plot_height = 140;
-    struct Plot {
-        char plant_type;
-        bool visited;
-    };
-    using PlotMap = std::array<std::array<Plot, plot_width>, plot_height>;
+using uint = unsigned int;
+struct Region {
+  const uint perimeter;
+  const uint area;
+  const uint sides;
+};
 
-    struct Region {
-        std::size_t perimeter = 0;
-        std::size_t area = 0;
-        std::size_t sides = 0;
-    };
+using Direction = std::pair<int, int>;
 
-    struct Coordinates {
-        int x;
-        int y;
+struct DirectionHash {
+  [[nodiscard]] auto operator()(const Direction &direction) const noexcept
+      -> std::size_t {
+    const auto h1 = std::hash<int>()(direction.first);
+    const auto h2 = std::hash<int>()(direction.second);
 
-        [[nodiscard]] auto operator==(const Coordinates& other) const noexcept -> bool = default;
-    };
-    struct CoordinatesHasher {
-        [[nodiscard]] auto operator()(const Coordinates& coords) const -> std::size_t {
-            const auto h1 = std::hash<int>()(coords.x);
-            const auto h2 = std::hash<int>()(coords.y);
+    return h1 ^ h2 << 1;
+  }
+};
 
-            // Combine field hash values
-            return h1 ^ h2 << 1;
-        }
-    };
+struct Coordinates {
+  const int x;
+  const int y;
 
-    using Direction = std::pair<int, int>;
-    constexpr Direction directions[4] = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}};
-    struct DirectionHasher {
-        [[nodiscard]] auto operator()(const Direction& direction) const -> std::size_t {
-            const auto h1 = std::hash<int>()(direction.first);
-            const auto h2 = std::hash<int>()(direction.second);
+  Coordinates(const int x, const int y) : x(x), y(y) {}
+  Coordinates(const std::size_t &x, const std::size_t &y) : x(x), y(y) {}
 
-            return h1 ^ h2 << 1;
-        }
-    };
+  [[nodiscard]] auto operator==(const Coordinates &rhs) const -> bool = default;
+  [[nodiscard]] auto operator+(const Direction &direction) const noexcept
+      -> Coordinates {
+    const auto new_x = this->x + direction.first;
+    const auto new_y = this->y + direction.second;
 
-    using CoordinateDirectionMap = std::unordered_map<Coordinates, std::unordered_set<Direction, DirectionHasher>, CoordinatesHasher>;
+    return {new_x, new_y};
+  }
+};
 
-    [[nodiscard]] auto read_plot_map_from_file(const std::string& file_path) -> PlotMap {
-        PlotMap plot_map;
-        auto file = std::ifstream(file_path);
+using DirectionSet = std::unordered_set<Direction, DirectionHash>;
 
-        std::size_t row = 0;
-        for (std::string line; std::getline(file, line); ++row) {
-            std::size_t column = 0;
-            for (const auto c : line) {
-                plot_map[row][column] = Plot{c, false};
-                ++column;
-            }
-        }
+constexpr Direction directions[4] = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+constexpr Direction adjacent_directions[4][2] = {
+    {{1, 0}, {0, 1}}, {{0, 1}, {-1, 0}}, {{-1, 0}, {0, -1}}, {{0, -1}, {1, 0}}};
 
-        return plot_map;
-    }
+struct Plot {
+  char plant_type;
+  bool visited = false;
+};
 
-    [[nodiscard]] auto is_new_side(
-        CoordinateDirectionMap& adjacent_plots,
-        const Coordinates& coords,
-        const Direction& base_direction
-    ) -> bool {
-        const auto is_existing_adjacency = [adjacent_plots, coords, base_direction](const Direction& direction) -> bool {
-            const auto [x_diff, y_diff] = direction;
-            const auto [base_x_diff, base_y_diff] = base_direction;
+constexpr std::size_t plot_width = 140;
+constexpr std::size_t plot_height = 140;
+using PlotArray = std::array<std::array<Plot, plot_width>, plot_height>;
 
-            // Check direction is perpendicular to the base direction
-            if ((base_x_diff != 0 and x_diff != 0) or (y_diff != 0 and base_y_diff != 0)) {
-                return false;
-            }
-
-            const auto new_x = coords.x + x_diff;
-            const auto new_y = coords.y + y_diff;
-
-            if (const auto coords_to_check = Coordinates{new_x, new_y}; adjacent_plots.contains(coords_to_check)) {
-                const auto& adjacent_plot_directions = adjacent_plots.at(coords_to_check);
-                return adjacent_plot_directions.contains(base_direction);
-            }
-
-            return false;
-        };
-
-        if (adjacent_plots.contains(coords)) {
-            auto& adjacent_plot_directions = adjacent_plots.at(coords);
-            adjacent_plot_directions.insert(base_direction);
-        } else {
-            const auto direction_set = std::unordered_set<Direction, DirectionHasher>{{base_direction}};
-            adjacent_plots[coords] = direction_set;
-        }
-
-        return std::ranges::none_of(directions, is_existing_adjacency);
-    }
-
-    [[nodiscard]] auto create_plot_region(
-        PlotMap& plot_map,
-        const Coordinates& start_coords,
-        const char plant_type
-    ) -> Region {
-        Region new_region;
-        CoordinateDirectionMap adjacent_plots;
-        auto plot_queue = std::queue<Coordinates>{{start_coords}};
-
-        const auto in_bounds = [](const int x, const int y) -> bool {
-            return x >= 0 and y >= 0 and x < plot_width and y < plot_height;
-        };
-
-        const auto process_perimeter = [&new_region, &adjacent_plots](const Coordinates& coords, const Direction& direction) {
-            new_region.perimeter++;
-
-            if (is_new_side(adjacent_plots, coords, direction)) {
-                new_region.sides++;
-            }
-        };
-
-        while (not plot_queue.empty()) {
-            new_region.area++;
-
-            const auto curr_coords = plot_queue.front();
-            plot_queue.pop();
-
-            const auto [curr_x, curr_y] = curr_coords;
-
-            const auto signed_x = static_cast<int>(curr_x);
-            const auto signed_y = static_cast<int>(curr_y);
-
-            for (const auto& direction : directions) {
-                const auto [x_diff, y_diff] = direction;
-                const auto new_x = signed_x + x_diff;
-                const auto new_y = signed_y + y_diff;
-                const auto new_coords = Coordinates{new_x, new_y};
-
-                if (not in_bounds(new_x, new_y)) {
-                    process_perimeter(new_coords, direction);
-                    continue;
-                }
-                auto& [adjacent_plant_type, visited] = plot_map[new_y][new_x];
-                if (adjacent_plant_type != plant_type) {
-                    process_perimeter(new_coords, direction);
-                    continue;
-                }
-                if (visited) {
-                    continue;
-                }
-
-                visited = true;
-                plot_queue.push(new_coords);
-            }
-        }
-
-        return new_region;
-    }
-
-    [[nodiscard]] auto get_regions_from_plot_map(PlotMap& plot_map) -> std::vector<Region> {
-        std::vector<Region> regions;
-        for (std::size_t row = 0; row < plot_width; ++row) {
-            for (std::size_t column = 0; column < plot_width; ++column) {
-                const auto curr_coords = Coordinates{
-                    static_cast<int>(column),
-                    static_cast<int>(row)
-                };
-                auto& [plant_type, visited] = plot_map[row][column];
-                if (visited) {
-                    continue;
-                }
-                visited = true;
-
-                const auto new_region = create_plot_region(plot_map, curr_coords, plant_type);
-                regions.push_back(new_region);
-            }
-        }
-
-        return regions;
-    }
-}
+// Prototypes
+[[nodiscard]] auto read_plots_from_file(const std::string &rel_file_path)
+    -> PlotArray;
+[[nodiscard]] auto plot_array_to_regions(PlotArray &plot_array)
+    -> std::vector<Region>;
+[[nodiscard]] auto new_plot_region(PlotArray &plot_array,
+                                   const Coordinates &start_coords,
+                                   const char plant_type) -> Region;
+} // namespace
 
 auto main() -> int {
-    const auto file_path = std::string{"input.txt"};
-    auto plot_map = read_plot_map_from_file(file_path);
+  const std::string file_path = "input.txt";
+  PlotArray plot_array = read_plots_from_file(file_path);
 
-    const auto regions = get_regions_from_plot_map(plot_map);
-    std::size_t fencing_price = 0;
-    std::size_t discounted_fencing_price = 0;
-    for (const auto& [perimeter, area, sides] : regions) {
-        fencing_price += perimeter * area;
-        discounted_fencing_price += sides * area;
+  const std::vector<Region> regions = plot_array_to_regions(plot_array);
+
+  uint fencing_price = 0;
+  uint discounted_fence_price = 0;
+  for (const auto &[perimeter, area, sides] : regions) {
+    fencing_price += perimeter * area;
+    discounted_fence_price += area * sides;
+  }
+  std::cout << "Fence price without discount: " << fencing_price << '\n';
+  std::cout << "Fence price with discount: " << discounted_fence_price << '\n';
+
+  return 0;
+}
+
+namespace {
+[[nodiscard]] auto read_plots_from_file(const std::string &rel_file_path)
+    -> PlotArray {
+  PlotArray plot_array;
+  auto file = std::ifstream(rel_file_path);
+
+  std::size_t row = 0;
+  for (std::string line; std::getline(file, line); ++row) {
+    std::size_t column = 0;
+    for (const auto c : line) {
+      plot_array[row][column] = Plot{c};
+      ++column;
+    }
+  }
+
+  return plot_array;
+}
+
+[[nodiscard]] auto plot_array_to_regions(PlotArray &plot_array)
+    -> std::vector<Region> {
+  std::vector<Region> regions;
+
+  // Find first plant of given type and group bordering plants into region
+  for (std::size_t row = 0; row < plot_width; ++row) {
+    for (std::size_t col = 0; col < plot_height; ++col) {
+      const auto curr_coords = Coordinates{col, row};
+      auto &[plant_type, visited] = plot_array[row][col];
+      if (visited) {
+        continue;
+      }
+
+      visited = true;
+      const Region new_region =
+          new_plot_region(plot_array, curr_coords, plant_type);
+      regions.push_back(new_region);
+    }
+  }
+
+  return regions;
+}
+
+[[nodiscard]] auto new_plot_region(PlotArray &plot_array,
+                                   const Coordinates &start_coords,
+                                   const char plant_type) -> Region {
+  uint area = 0;
+  uint perimeter = 0;
+  uint sides = 0;
+
+  const auto is_empty_coordinate = [&plot_array,
+                                    &plant_type](const Coordinates &coords) {
+    const auto [x, y] = coords;
+    if (x < 0 or x >= plot_width or y < 0 or y >= plot_height) {
+      return true;
     }
 
-    std::cout << "Fence price without discount: " << fencing_price << '\n';
-    std::cout << "Discounted Fence price: " << discounted_fencing_price << '\n';
-    return 0;
+    auto &[adjacent_plant_type, visited] = plot_array[y][x];
+    return adjacent_plant_type != plant_type;
+  };
+
+  // Perform BFS to find region
+  const auto [start_x, start_y] = start_coords;
+  plot_array[start_y][start_x].visited = true;
+  auto plot_queue = std::queue<Coordinates>{{start_coords}};
+  while (not plot_queue.empty()) {
+    ++area;
+
+    const auto curr_coords = plot_queue.front();
+    plot_queue.pop();
+
+    // Check perimeter and queue next plots
+    const auto [curr_x, curr_y] = curr_coords;
+    for (const auto &direction : directions) {
+      const auto new_coords = curr_coords + direction;
+      if (is_empty_coordinate(new_coords)) {
+        ++perimeter;
+        continue;
+      }
+
+      const auto [new_x, new_y] = new_coords;
+      auto &visited = plot_array[new_y][new_x].visited;
+      if (visited) {
+        continue;
+      }
+      visited = true;
+      plot_queue.push(new_coords);
+    }
+
+    // Check for corners (and hence edges)
+    for (const auto &direction_pair : adjacent_directions) {
+      const auto &[direction1, direction2] = direction_pair;
+      const auto coord1 = curr_coords + direction1;
+      const auto coord2 = curr_coords + direction2;
+
+      const auto coord1_empty = is_empty_coordinate(coord1);
+      const auto coord2_empty = is_empty_coordinate(coord2);
+      if (coord1_empty and coord2_empty) {
+        ++sides;
+        continue;
+      }
+
+      const auto corner_coord = curr_coords + direction1 + direction2;
+      if (not coord1_empty and not coord2_empty and
+          is_empty_coordinate(corner_coord)) {
+        ++sides;
+      }
+    }
+  }
+
+  return {perimeter, area, sides};
 }
+} // namespace
