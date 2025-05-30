@@ -1,310 +1,354 @@
-#include <iostream>
-#include <fstream>
 #include <array>
-#include <vector>
-#include <tuple>
+#include <fstream>
+#include <iostream>
+#include <stack>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace {
-    enum Direction {
-        Up,
-        Down,
-        Left,
-        Right
-    };
+enum Entity { Wall, Box, Empty, BoxLeft, BoxRight };
+constexpr char robot_char = '@';
 
-    using Directions = std::vector<Direction>;
+constexpr std::size_t warehouse_height = 50;
 
-    struct Coordinates {
-        std::size_t x = 0;
-        std::size_t y = 0;
+template <std::size_t N>
+using Warehouse = std::array<std::array<Entity, N>, warehouse_height>;
 
-        [[nodiscard]] auto operator+(const Direction &direction) const -> Coordinates {
-            std::size_t new_x_pos = x;
-            std::size_t new_y_pos = y;
+enum Direction { Up, Down, Left, Right };
+using Directions = std::vector<Direction>;
 
-            switch (direction) {
-                case Up:
-                    new_y_pos -= 1;
-                    break;
-                case Down:
-                    new_y_pos += 1;
-                    break;
-                case Left:
-                    new_x_pos -= 1;
-                    break;
-                case Right:
-                    new_x_pos += 1;
-                    break;
-            }
-            return {new_x_pos, new_y_pos};
-        }
+using uint = unsigned int;
+struct Coordinates {
+  uint x;
+  uint y;
 
-        [[nodiscard]] auto operator==(const Coordinates &other) const noexcept -> bool = default;
-    };
-
-    struct CoordinatesHash {
-        auto operator()(const Coordinates &coordinates) const noexcept -> std::size_t {
-            const auto x_hash = std::hash<std::size_t>()(coordinates.x);
-            const auto y_hash = std::hash<std::size_t>()(coordinates.y);
-
-            return x_hash ^ y_hash << 1;
-        }
-    };
-
-    enum Entity {
-        Wall,
-        Box,
-        Empty,
-        BoxLeft,
-        BoxRight,
-    };
-
-    constexpr auto warehouse_width = 10;
-    constexpr auto warehouse_height = 10;
-    template<size_t N>
-    using Warehouse = std::array<std::array<Entity, N>, warehouse_height>;
-
-    struct EntityMovement {
-        const Coordinates old_pos;
-        const Coordinates new_pos;
-        const Entity object_type;
-    };
-
-    struct MovementHash {
-        auto operator()(const EntityMovement &movement) const -> std::size_t {
-            const auto old_pos_hash = CoordinatesHash()(movement.old_pos);
-            const auto new_pos_hash = CoordinatesHash()(movement.new_pos);
-            return old_pos_hash ^ new_pos_hash << 1;
-        }
-    };
-    using Movements = std::unordered_set<EntityMovement, MovementHash>;
-
-    [[nodiscard]] auto warehouse_object_from_char(const char c) -> Entity {
-        switch (c) {
-            case '#':
-                return Wall;
-            case '@':
-            case '.':
-                return Empty;
-            case 'O':
-                return Box;
-            default:
-                throw std::runtime_error("Unknown object character");
-        }
+  [[nodiscard]] auto operator+(const Direction direction) const -> Coordinates {
+    switch (direction) {
+    case Up:
+      return {x, y - 1};
+    case Down:
+      return {x, y + 1};
+    case Left:
+      return {x - 1, y};
+    case Right:
+      return {x + 1, y};
+    default:
+      throw std::logic_error{"Invalid direction"};
     }
+  }
 
-    [[nodiscard]] auto read_warehouse_from_file(
-        std::ifstream &file) -> std::pair<Warehouse<warehouse_width>, Coordinates> {
-        Warehouse<warehouse_width> warehouse;
-        Coordinates robot_location;
+  [[nodiscard]] auto operator==(const Coordinates &rhs) const noexcept
+      -> bool = default;
+  auto operator=(const Coordinates &rhs) -> Coordinates & = default;
+};
 
-        std::size_t y = 0;
-        for (std::string line; std::getline(file, line) and not line.empty();) {
-            std::size_t x = 0;
-            for (const auto c: line) {
-                warehouse[y][x] = warehouse_object_from_char(c);
-                if (constexpr auto robot_char = '@'; c == robot_char) {
-                    robot_location = {x, y};
-                }
-                ++x;
-            }
-            ++y;
-        }
+struct CoordinatesHash {
+  [[nodiscard]] auto operator()(const Coordinates &coords) const
+      -> std::size_t {
+    const auto h1 = std::hash<uint>{}(coords.x);
+    const auto h2 = std::hash<uint>{}(coords.y);
 
-        return {warehouse, robot_location};
-    }
+    return h1 ^ h2 << 1;
+  }
+};
 
-    [[nodiscard]] auto read_directions_from_file(std::ifstream &file) -> Directions {
-        Directions directions;
-        const auto read_direction = [&directions](const char c) {
-            switch (c) {
-                case '^':
-                    directions.push_back(Up);
-                    break;
-                case 'v':
-                    directions.push_back(Down);
-                    break;
-                case '<':
-                    directions.push_back(Left);
-                    break;
-                case '>':
-                    directions.push_back(Right);
-                    break;
-                default:
-                    throw std::runtime_error("Unknown direction character");
-            }
-        };
+constexpr std::size_t warehouse_width = 50;
+struct WarehouseSetup {
+  const Warehouse<warehouse_width> warehouse;
+  const Coordinates robot_start;
+  const Directions robot_directions;
+};
 
-        for (std::string line; std::getline(file, line);) {
-            for (const auto c: line) {
-                read_direction(c);
-            }
-        }
-        return directions;
-    }
+struct EntityMovement {
+  const Coordinates old_pos;
+  const Coordinates new_pos;
+  const Entity entity_type;
+};
 
-    [[nodiscard]] auto read_setup_from_file(
-        const std::string &file_path) -> std::tuple<Warehouse<warehouse_width>, Coordinates, Directions> {
-        auto file = std::ifstream(file_path);
-        const auto [warehouse, robot_location] = read_warehouse_from_file(file);
-        const auto directions = read_directions_from_file(file);
+// Prototypes
+[[nodiscard]] auto read_setup_from_file(const std::string &file_path)
+    -> WarehouseSetup;
+[[nodiscard]] auto read_warehouse_from_file(std::ifstream &fp)
+    -> std::pair<Warehouse<warehouse_width>, Coordinates>;
+[[nodiscard]] auto entity_from_char(const char c) -> Entity;
+[[nodiscard]] auto read_directions_from_file(std::ifstream &fp) -> Directions;
 
-        return {warehouse, robot_location, directions};
-    }
+template <std::size_t N>
+[[nodiscard]] auto process_warehouse(const Warehouse<N> &warehouse,
+                                     const Coordinates &robot_start,
+                                     const Directions &directions) -> uint;
 
-    template<typename W>
-    [[nodiscard]] auto can_move(
-        W &warehouse,
-        const Entity object,
-        const Coordinates &object_location,
-        const Direction &direction,
-        Movements &movements
-    ) -> bool {
-        switch (object) {
-            case BoxLeft:
-            case BoxRight: {
-                return can_move_large_box(warehouse, object, object_location, direction, movements);
-            }
-            case Box: {
-                const auto new_object_pos = object_location + direction;
-                const auto object_at_pos = warehouse[new_object_pos.y][new_object_pos.x];
-                movements.insert(EntityMovement{object_location, new_object_pos, Box});
+template <std::size_t N>
+[[nodiscard]] auto process_robot_movements(const Warehouse<N> &warehouse,
+                                           const Coordinates &robot_start,
+                                           const Directions &directions)
+    -> Warehouse<N>;
 
-                return can_move(warehouse, object_at_pos, new_object_pos, direction, movements);
-            }
-            case Wall:
-                return false;
-            case Empty:
-                return true;
-            default:
-                throw std::runtime_error("Unknown object at position");
-        }
-    }
+template <std::size_t N>
+[[nodiscard]] auto
+check_entity_movement(Warehouse<N> &warehouse, const Coordinates &dest,
+                      const Direction direction,
+                      std::stack<EntityMovement> &entity_movements) -> bool;
 
-    template<size_t N>
-    [[nodiscard]] auto can_move_large_box(
-        Warehouse<N> &warehouse,
-        const Entity box_side,
-        const Coordinates &side_location,
-        const Direction &direction,
-        Movements &movements
-    ) -> bool {
-        const auto left_location = box_side == BoxLeft ? side_location : side_location + Left;
-        const auto right_location = box_side == BoxRight ? side_location : side_location + Right;
+template <std::size_t N>
+void move_entities(Warehouse<N> &warehouse,
+                   std::stack<EntityMovement> entity_movements);
+template <std::size_t N>
+[[nodiscard]] auto calculate_box_gps_sum(const Warehouse<N> &warehouse) -> uint;
 
-        const auto new_object_pos_left = left_location + direction;
-        const auto new_object_pos_right = right_location + direction;
-        const auto object_at_pos_left = warehouse[new_object_pos_left.y][new_object_pos_left.x];
-        const auto object_at_pos_right = warehouse[new_object_pos_right.y][new_object_pos_right.x];
-
-        if (direction == Left) {
-            movements.insert(EntityMovement{right_location, new_object_pos_right, BoxRight});
-            movements.insert(EntityMovement{left_location, new_object_pos_left, BoxLeft});
-            return can_move(warehouse, object_at_pos_left, new_object_pos_left, Left, movements);
-        }
-        if (direction == Right) {
-            movements.insert(EntityMovement{left_location, new_object_pos_left, BoxLeft});
-            movements.insert(EntityMovement{right_location, new_object_pos_right, BoxRight});
-            return can_move(warehouse, object_at_pos_right, new_object_pos_right, Right, movements);
-        }
-
-        const auto left_movement = EntityMovement{left_location, new_object_pos_left, BoxLeft};
-        const auto right_movement = EntityMovement{right_location, new_object_pos_right, BoxRight};
-        if (not movements.contains(left_movement)) {
-            movements.insert(left_movement);
-        }
-        if (not movements.contains(right_movement)) {
-            movements.insert(right_movement);
-        }
-
-        return can_move(warehouse, object_at_pos_left, new_object_pos_left, direction, movements)
-               and can_move(warehouse, object_at_pos_right, new_object_pos_right, direction, movements);
-    }
-
-    template<size_t N>
-    auto execute_entity_movements(Warehouse<N> &warehouse, Movements &movements) {
-        for (const auto& movement : movements) {
-            const auto [x, y] = movement.new_pos;
-            warehouse[y][x] = movement.object_type;
-        }
-
-        for (const auto& movement : movements) {
-            const auto [x, y] = movement.old_pos;
-            warehouse[y][x] = Empty;
-        }
-    }
-
-    template<size_t N>
-    [[nodiscard]] auto process_robot_movements(
-        Warehouse<N> warehouse,
-        Coordinates robot_location,
-        const Directions &directions
-    ) -> Warehouse<N> {
-        for (const auto &direction: directions) {
-            Movements movements;
-            const auto new_robot_pos = robot_location + direction;
-            const auto object_at_pos = warehouse[new_robot_pos.y][new_robot_pos.x];
-            if (can_move(warehouse, object_at_pos, new_robot_pos, direction, movements)) {
-                execute_entity_movements(warehouse, movements);
-                robot_location = new_robot_pos;
-            }
-        }
-
-        return warehouse;
-    }
-
-    template<size_t N>
-    [[nodiscard]] auto calculate_box_gps_sum(const Warehouse<N> &warehouse, const std::size_t width) -> uint {
-        uint gps_sum = 0;
-        for (std::size_t y = 0; y < warehouse_height; ++y) {
-            for (std::size_t x = 0; x < width; ++x) {
-                const auto object = warehouse[y][x];
-                if (object == Box or object == BoxLeft) {
-                    gps_sum += 100 * y + x;
-                }
-            }
-        }
-        return gps_sum;
-    }
-
-    [[nodiscard]] auto build_wide_warehouse_from_warehouse(
-        const Warehouse<warehouse_width> &warehouse,
-        const Coordinates &robot_start
-    ) -> std::pair<Warehouse<warehouse_width * 2>, Coordinates> {
-        Warehouse<warehouse_width * 2> wide_warehouse;
-
-        for (std::size_t y = 0; y < warehouse_height; ++y) {
-            for (std::size_t x = 0; x < warehouse_width; ++x) {
-                const auto object = warehouse[y][x];
-
-                const auto left_x_pos = x * 2;
-                wide_warehouse[y][left_x_pos] = object == Box ? BoxLeft : object;
-                wide_warehouse[y][left_x_pos + 1] = object == Box ? BoxRight : object;
-            }
-        }
-
-        const auto wide_robot_start = Coordinates{
-            robot_start.x * 2,
-            robot_start.y,
-        };
-
-        return {wide_warehouse, wide_robot_start};
-    }
-}
+template <std::size_t N>
+[[nodiscard]] auto create_wide_warehouse(const Warehouse<N> &warehouse,
+                                         const Coordinates &robot_start)
+    -> std::pair<Warehouse<N * 2>, Coordinates>;
+} // namespace
 
 auto main() -> int {
-    const auto file_path = std::string{"test.txt"};
-    const auto [warehouse, robot_start, directions] = read_setup_from_file(file_path);
+  const auto file_path = std::string{"input.txt"};
+  const auto [warehouse, robot_start, directions] =
+      read_setup_from_file(file_path);
 
-    const auto moved_warehouse = process_robot_movements(warehouse, robot_start, directions);
-    const auto gps_sum = calculate_box_gps_sum(moved_warehouse, warehouse_width);
-    std::cout << "GPS sum of normal warehouse: " << gps_sum << '\n';
+  const uint small_gps_sum =
+      process_warehouse(warehouse, robot_start, directions);
+  std::cout << "Small warehouse box gps sum: " << small_gps_sum << '\n';
 
-    const auto [wide_warehouse, wide_robot_start] = build_wide_warehouse_from_warehouse(warehouse, robot_start);
-    const auto wide_moved_warehouse = process_robot_movements(wide_warehouse, wide_robot_start, directions);
-    const auto wide_gps_sum = calculate_box_gps_sum(wide_moved_warehouse, warehouse_width * 2);
-    std::cout << "GPS sum of wide warehouse: " << wide_gps_sum << '\n';
+  const auto [wide_warehouse, wide_robot_start] =
+      create_wide_warehouse(warehouse, robot_start);
+  const uint wide_gps_sum =
+      process_warehouse(wide_warehouse, wide_robot_start, directions);
+  std::cout << "Wide warehouse box gps sum: " << wide_gps_sum << '\n';
 
-    return 0;
+  return 0;
 }
+
+namespace {
+template <std::size_t N>
+[[nodiscard]] auto process_warehouse(const Warehouse<N> &warehouse,
+                                     const Coordinates &robot_start,
+                                     const Directions &directions) -> uint {
+  const auto moved_warehouse =
+      process_robot_movements(warehouse, robot_start, directions);
+  return calculate_box_gps_sum(moved_warehouse);
+}
+
+[[nodiscard]] auto read_setup_from_file(const std::string &file_path)
+    -> WarehouseSetup {
+  auto fp = std::ifstream{file_path};
+  const auto [warehouse, robot_location] = read_warehouse_from_file(fp);
+  const auto directions = read_directions_from_file(fp);
+
+  return {warehouse, robot_location, directions};
+}
+
+[[nodiscard]] auto read_warehouse_from_file(std::ifstream &fp)
+    -> std::pair<Warehouse<warehouse_width>, Coordinates> {
+  Warehouse<warehouse_width> warehouse;
+  uint robot_x, robot_y;
+
+  std::size_t y = 0;
+  for (std::string line; std::getline(fp, line) and not line.empty(); ++y) {
+    std::size_t x = 0;
+    for (const char c : line) {
+      warehouse[y][x] = entity_from_char(c);
+
+      if (c == robot_char) {
+        robot_x = x;
+        robot_y = y;
+      }
+
+      ++x;
+    }
+  }
+
+  const auto robot_start = Coordinates{robot_x, robot_y};
+  return {warehouse, robot_start};
+}
+
+[[nodiscard]] auto entity_from_char(const char c) -> Entity {
+  switch (c) {
+  case '#':
+    return Wall;
+  case robot_char:
+  case '.':
+    return Empty;
+  case 'O':
+    return Box;
+  default:
+    throw std::runtime_error("Unknown entity character");
+  }
+}
+
+[[nodiscard]] auto read_directions_from_file(std::ifstream &fp) -> Directions {
+  Directions directions;
+
+  const auto read_direction = [&directions](const char c) {
+    switch (c) {
+    case '^':
+      directions.push_back(Up);
+      break;
+    case 'v':
+      directions.push_back(Down);
+      break;
+    case '>':
+      directions.push_back(Right);
+      break;
+    case '<':
+      directions.push_back(Left);
+      break;
+    default:
+      throw std::runtime_error("Unknown direction character");
+    }
+  };
+
+  for (std::string line; std::getline(fp, line);) {
+    for (const auto c : line) {
+      read_direction(c);
+    }
+  }
+
+  return directions;
+}
+
+template <std::size_t N>
+[[nodiscard]] auto process_robot_movements(const Warehouse<N> &start_warehouse,
+                                           const Coordinates &robot_start,
+                                           const Directions &directions)
+    -> Warehouse<N> {
+  Warehouse<N> warehouse = start_warehouse;
+  Coordinates robot_location = robot_start;
+  for (const auto &direction : directions) {
+    std::stack<EntityMovement> entity_movements = {};
+    const Coordinates new_robot_pos = robot_location + direction;
+    if (check_entity_movement(warehouse, new_robot_pos, direction,
+                              entity_movements)) {
+      move_entities(warehouse, entity_movements);
+      robot_location = new_robot_pos;
+    }
+  }
+
+  return warehouse;
+}
+
+template <std::size_t N>
+[[nodiscard]] auto
+check_entity_movement(Warehouse<N> &warehouse, const Coordinates &dest,
+                      const Direction direction,
+                      std::stack<EntityMovement> &entity_movements) -> bool {
+  const auto simple_push = [&entity_movements,
+                            direction](const Coordinates original_pos,
+                                       const Entity entity) {
+    const auto box_dest = original_pos + direction;
+    const auto box_movement = EntityMovement(original_pos, box_dest, entity);
+    entity_movements.push(box_movement);
+    return box_dest;
+  };
+
+  const auto check_large_box_movement =
+      [direction, &entity_movements, &warehouse](
+          const Coordinates &left_dest, const Coordinates &right_dest) {
+        switch (direction) {
+        case Up:
+        case Down:
+          return check_entity_movement(warehouse, left_dest, direction,
+                                       entity_movements) and
+                 check_entity_movement(warehouse, right_dest, direction,
+                                       entity_movements);
+        case Right:
+          return check_entity_movement(warehouse, right_dest, direction,
+                                       entity_movements);
+        case Left:
+          return check_entity_movement(warehouse, left_dest, direction,
+                                       entity_movements);
+        default:
+          throw std::logic_error("Invalid direction");
+        };
+      };
+
+  const auto &[dest_x, dest_y] = dest;
+  const Entity object_at_dest = warehouse[dest_y][dest_x];
+  switch (object_at_dest) {
+  case Box: {
+    const Coordinates &box_dest = simple_push(dest, Box);
+    return check_entity_movement(warehouse, box_dest, direction,
+                                 entity_movements);
+  };
+  case BoxLeft: {
+    const auto right_side_pos = dest + Right;
+    const Coordinates left_dest = simple_push(dest, BoxLeft);
+    const Coordinates right_dest = simple_push(right_side_pos, BoxRight);
+    return check_large_box_movement(left_dest, right_dest);
+  };
+  case BoxRight: {
+    const auto left_side_pos = dest + Left;
+    const Coordinates right_dest = simple_push(dest, BoxRight);
+    const Coordinates left_dest = simple_push(left_side_pos, BoxLeft);
+    return check_large_box_movement(left_dest, right_dest);
+  };
+  case Wall:
+    return false;
+  case Empty:
+    return true;
+  default:
+    throw std::logic_error("Unknown entity");
+  }
+}
+
+template <std::size_t N>
+void move_entities(Warehouse<N> &warehouse,
+                   std::stack<EntityMovement> entity_movements) {
+  std::unordered_set<Coordinates, CoordinatesHash> visited_dests;
+  while (not entity_movements.empty()) {
+    const auto [old_pos, new_pos, entity_type] = entity_movements.top();
+    entity_movements.pop();
+    if (visited_dests.contains(new_pos)) {
+      continue;
+    }
+
+    visited_dests.insert(new_pos);
+    warehouse[old_pos.y][old_pos.x] = Empty;
+    warehouse[new_pos.y][new_pos.x] = entity_type;
+  }
+}
+
+template <size_t N>
+[[nodiscard]] auto calculate_box_gps_sum(const Warehouse<N> &warehouse)
+    -> uint {
+  uint gps_sum = 0;
+  for (std::size_t y = 0; y < warehouse_height; ++y) {
+    for (std::size_t x = 0; x < N; ++x) {
+      const auto object = warehouse[y][x];
+      if (object == Box or object == BoxLeft) {
+        gps_sum += 100 * y + x;
+      }
+    }
+  }
+
+  return gps_sum;
+}
+
+template <std::size_t N>
+[[nodiscard]] auto create_wide_warehouse(const Warehouse<N> &warehouse,
+                                         const Coordinates &robot_start)
+    -> std::pair<Warehouse<N * 2>, Coordinates> {
+  Warehouse<N * 2> wide_warehouse;
+
+  for (std::size_t y = 0; y < warehouse_height; ++y) {
+    for (std::size_t x = 0; x < N; ++x) {
+      const Entity small_entity = warehouse[y][x];
+
+      const uint wide_x = x * 2;
+      if (small_entity == Box) {
+        wide_warehouse[y][wide_x] = BoxLeft;
+        wide_warehouse[y][wide_x + 1] = BoxRight;
+        continue;
+      }
+
+      wide_warehouse[y][wide_x] = small_entity;
+      wide_warehouse[y][wide_x + 1] = small_entity;
+    }
+  }
+
+  const auto wide_robot_start = Coordinates{robot_start.x * 2, robot_start.y};
+  return {wide_warehouse, wide_robot_start};
+}
+} // namespace
