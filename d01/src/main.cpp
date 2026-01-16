@@ -15,9 +15,9 @@ using LocationIdList = std::vector<LocationId>;
 using LocationIdListPair = std::pair<LocationIdList, LocationIdList>;
 
 // Prototypes //
-[[nodiscard]] auto read_lists_from_file(const std::string filepath) -> LocationIdListPair;
-[[nodiscard]] auto calc_list_distance(const LocationIdList l1, const LocationIdList l2) -> unsigned int;
-[[nodiscard]] auto calc_similarity_score(const LocationIdList l1, const LocationIdList l2) -> unsigned int;
+[[nodiscard]] auto read_lists_from_file(const std::string& filepath) -> LocationIdListPair;
+[[nodiscard]] auto calc_list_distance(const LocationIdList& l1, const LocationIdList& l2) -> unsigned int;
+[[nodiscard]] auto calc_similarity_score(const LocationIdList& l1, const LocationIdList& l2) -> unsigned int;
 } // namespace
 
 // Implementation //
@@ -37,7 +37,7 @@ auto main(const int argc, const char **argv) -> int {
 }
 
 namespace {
-auto read_lists_from_file(const std::string filepath) -> LocationIdListPair {
+auto read_lists_from_file(const std::string& filepath) -> LocationIdListPair {
   auto file = std::ifstream(filepath);
 
   LocationIdList list1;
@@ -57,7 +57,7 @@ auto read_lists_from_file(const std::string filepath) -> LocationIdListPair {
   return std::make_pair(list1, list2);
 }
 
-auto calc_list_distance(const LocationIdList l1, const LocationIdList l2) -> unsigned int {
+auto calc_list_distance(const LocationIdList& l1, const LocationIdList& l2) -> unsigned int {
   unsigned int total_distance = 0;
   for (auto it1 = l1.cbegin(), it2 = l2.cbegin(); it1 != l1.cend(); ++it1, ++it2) {
       total_distance += std::abs(*it1 - *it2);
@@ -66,7 +66,7 @@ auto calc_list_distance(const LocationIdList l1, const LocationIdList l2) -> uns
   return total_distance;
 }
 
-auto calc_similarity_score(const LocationIdList l1, const LocationIdList l2) -> unsigned int {
+auto calc_similarity_score(const LocationIdList& l1, const LocationIdList& l2) -> unsigned int {
   std::unordered_map<LocationId, unsigned int> list2_map;
   for (const LocationId e : l2) {
     ++list2_map[e];
