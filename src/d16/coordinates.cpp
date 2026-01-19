@@ -1,4 +1,4 @@
-#include "Coordinates.h"
+#include "coordinates.h"
 
 namespace {
     [[nodiscard]] auto get_direction_to_left(const Direction direction) -> Direction {
